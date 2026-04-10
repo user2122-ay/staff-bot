@@ -6,24 +6,16 @@ module.exports = {
     .setDescription("Registrar un ascenso de staff")
 
     .addUserOption(option =>
-      option.setName("usuario")
-        .setDescription("Miembro del staff")
-        .setRequired(true))
+      option.setName("usuario").setDescription("Staff").setRequired(true))
 
     .addRoleOption(option =>
-      option.setName("rango_anterior")
-        .setDescription("Rango anterior")
-        .setRequired(true))
+      option.setName("rango_anterior").setDescription("Rango anterior").setRequired(true))
 
     .addRoleOption(option =>
-      option.setName("rango_nuevo")
-        .setDescription("Nuevo rango")
-        .setRequired(true))
+      option.setName("rango_nuevo").setDescription("Nuevo rango").setRequired(true))
 
     .addUserOption(option =>
-      option.setName("aprobado_por")
-        .setDescription("Alto staff que aprueba")
-        .setRequired(true))
+      option.setName("aprobado_por").setDescription("Alto staff").setRequired(true))
 
     .setDefaultMemberPermissions(PermissionFlagsBits.ManageRoles),
 
@@ -35,7 +27,6 @@ module.exports = {
 
     const miembro = await interaction.guild.members.fetch(usuario.id);
 
-    // 🔥 Quitar y dar roles
     await miembro.roles.remove(anterior).catch(() => {});
     await miembro.roles.add(nuevo).catch(() => {});
 
@@ -45,9 +36,9 @@ module.exports = {
       .setTitle("📈 Ascenso de Staff")
       .setColor("Green")
       .addFields(
-        { name: "👤 Nombre del Staff", value: `<@${usuario.id}>` },
-        { name: "📉 Rango Anterior", value: `<@&${anterior.id}>`, inline: true },
-        { name: "📈 Rango Ascendido", value: `<@&${nuevo.id}>`, inline: true },
+        { name: "👤 Staff", value: `<@${usuario.id}>` },
+        { name: "📉 Antes", value: `<@&${anterior.id}>`, inline: true },
+        { name: "📈 Ahora", value: `<@&${nuevo.id}>`, inline: true },
         { name: "👮 Aprobado por", value: `<@${aprobador.id}>` },
         { name: "📅 Fecha", value: fecha }
       )
@@ -55,11 +46,7 @@ module.exports = {
 
     await interaction.reply({ embeds: [embed] });
 
-    // 📢 Logs (CAMBIA ESTE ID)
     const canalLogs = interaction.guild.channels.cache.get("1413745587483836426");
-
-    if (canalLogs) {
-      canalLogs.send({ embeds: [embed] });
-    }
+    if (canalLogs) canalLogs.send({ embeds: [embed] });
   }
 };
