@@ -1,0 +1,15 @@
+{
+  "name": "staff-bot-rp",
+  "version": "1.0.0",
+  "description": "Bot de staff para ascensos, sanciones y gestión",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "author": "Anthony",
+  "license": "MIT",
+  "dependencies": {
+    "discord.js": "^14.14.1",
+    "dotenv": "^16.4.5"
+  }
+}
