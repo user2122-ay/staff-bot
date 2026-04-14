@@ -2,8 +2,8 @@ const { SlashCommandBuilder, EmbedBuilder, PermissionFlagsBits } = require("disc
 
 module.exports = {
   data: new SlashCommandBuilder()
-    .setName("advertencia")
-    .setDescription("Registrar una advertencia a staff")
+    .setName("advertir")
+    .setDescription("Advertir a un miembro del staff")
 
     .addUserOption(option =>
       option.setName("usuario")
@@ -12,7 +12,7 @@ module.exports = {
 
     .addRoleOption(option =>
       option.setName("rango")
-        .setDescription("Rango actual del staff")
+        .setDescription("Rango del staff")
         .setRequired(true))
 
     .addStringOption(option =>
@@ -47,24 +47,20 @@ module.exports = {
     const fecha = new Date().toLocaleString();
 
     const embed = new EmbedBuilder()
-      .setTitle("⚠️ Advertencia de Staff")
+      .setTitle("⚠️ Formato de Advertencia")
       .setColor("Yellow")
-      .addFields(
-        { name: "👤 Usuario del Staff", value: `<@${usuario.id}>` },
-        { name: "📊 Rango del Staff", value: `<@&${rango.id}>` },
-        { name: "⚠️ Motivo", value: motivo },
-        { name: "📝 Nota", value: nota },
-        { name: "📅 Fecha", value: fecha }
+      .setDescription(
+        `**→ |  Usuario del Staff:** <@${usuario.id}>\n\n` +
+        `**→ |  Rango del Staff:** <@&${rango.id}>\n\n` +
+        `**→ |  Motivo:** ${motivo}\n\n` +
+        `**→ |  Nota (adicional):** ${nota}`
       )
-      .setTimestamp();
+      .setFooter({ text: `Fecha: ${fecha}` });
 
     await interaction.reply({ embeds: [embed] });
 
-    // 📢 LOGS (mismo canal que usas)
+    // 📢 LOGS
     const canalLogs = interaction.guild.channels.cache.get("1492368430265794641");
-
-    if (canalLogs) {
-      canalLogs.send({ embeds: [embed] });
-    }
+    if (canalLogs) canalLogs.send({ embeds: [embed] });
   }
 };
