@@ -17,17 +17,17 @@ module.exports = {
 
     .addStringOption(option =>
       option.setName("motivo")
-        .setDescription("Motivo de la advertencia")
+        .setDescription("Motivo")
         .setRequired(true))
 
     .addStringOption(option =>
       option.setName("nota")
         .setDescription("Nota adicional")
-        .setRequired(false))
+        .setRequired(false)) // 👈 IMPORTANTE
 
     .addRoleOption(option =>
       option.setName("rol_advertencia")
-        .setDescription("Rol de advertencia a asignar")
+        .setDescription("Rol de advertencia")
         .setRequired(true))
 
     .setDefaultMemberPermissions(PermissionFlagsBits.ManageRoles),
@@ -41,25 +41,24 @@ module.exports = {
 
     const miembro = await interaction.guild.members.fetch(usuario.id);
 
-    // ⚠️ Dar rol de advertencia
     await miembro.roles.add(rolAdvertencia).catch(() => {});
 
     const fecha = new Date().toLocaleString();
 
     const embed = new EmbedBuilder()
-      .setTitle("⚠️ Formato de Advertencia")
+      .setTitle("⚠️ Advertencia")
       .setColor("Yellow")
-      .setDescription(
-        `**→ |  Usuario del Staff:** <@${usuario.id}>\n\n` +
-        `**→ |  Rango del Staff:** <@&${rango.id}>\n\n` +
-        `**→ |  Motivo:** ${motivo}\n\n` +
-        `**→ |  Nota (adicional):** ${nota}`
+      .addFields(
+        { name: "👤 Usuario", value: `<@${usuario.id}>` },
+        { name: "📊 Rango", value: `<@&${rango.id}>` },
+        { name: "⚠️ Motivo", value: motivo },
+        { name: "📝 Nota", value: nota },
+        { name: "📅 Fecha", value: fecha }
       )
-      .setFooter({ text: `Fecha: ${fecha}` });
+      .setTimestamp();
 
     await interaction.reply({ embeds: [embed] });
 
-    // 📢 LOGS
     const canalLogs = interaction.guild.channels.cache.get("1492368430265794641");
     if (canalLogs) canalLogs.send({ embeds: [embed] });
   }
