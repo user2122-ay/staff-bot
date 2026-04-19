@@ -22,7 +22,7 @@ commands.push(command.data.toJSON());
 
 // 🚀 Cuando el bot inicia
 client.once("ready", async () => {
-console.log(✅ Bot encendido como ${client.user.tag});
+console.log(`✅ Bot encendido como ${client.user.tag}`);
 
 try {
 const rest = new REST({ version: "10" }).setToken(process.env.TOKEN);
