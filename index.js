@@ -15,7 +15,7 @@ const commandFiles = fs.readdirSync("./commands").filter(file => file.endsWith("
 const commands = [];
 
 for (const file of commandFiles) {
-const command = require(./commands/${file});
+const command = require(`./commands/${file}`);
 client.commands.set(command.data.name, command);
 commands.push(command.data.toJSON());
 }
