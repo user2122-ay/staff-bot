@@ -6,7 +6,11 @@ const { connectDB } = require("./utils/db");
 const { handlePrefixCommand } = require('./handlers/prefixCommands');
 
 const client = new Client({
-  intents: [GatewayIntentBits.Guilds]
+  intents: [
+    GatewayIntentBits.Guilds,
+    GatewayIntentBits.GuildMessages,
+    GatewayIntentBits.MessageContent,
+  ]
 });
 
 client.commands = new Collection();
@@ -45,7 +49,7 @@ client.once("ready", async () => {
   }
 });
 
-// 🎮 Ejecutar comandos
+// 🎮 Ejecutar comandos slash
 client.on("interactionCreate", async interaction => {
   if (!interaction.isChatInputCommand()) return;
 
@@ -61,13 +65,15 @@ client.on("interactionCreate", async interaction => {
       ephemeral: true
     });
   }
-  client.on('messageCreate', async (message) => {
+});
+
+// 💬 Comandos con prefijo "!"
+client.on('messageCreate', async (message) => {
   try {
     await handlePrefixCommand(message);
   } catch (err) {
     console.error('❌ Error manejando comando con prefijo:', err);
   }
-});
 });
 
 // 🔌 Conectar a la BD y luego loguear el bot
