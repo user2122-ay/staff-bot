@@ -62,6 +62,23 @@ ephemeral: true
 }
 });
 
+require('dotenv').config();
+const { Client, GatewayIntentBits } = require('discord.js');
+const { connectDB } = require('./utils/db');
+
+const client = new Client({
+  intents: [GatewayIntentBits.Guilds],
+});
+
+client.once('ready', () => {
+  console.log(`✅ Bot conectado como ${client.user.tag}`);
+});
+
+(async () => {
+  await connectDB();
+  await client.login(process.env.DISCORD_TOKEN);
+})();
+
 // 🔑 Login
 client.login(process.env.TOKEN);
 
