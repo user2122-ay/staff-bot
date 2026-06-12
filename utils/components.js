@@ -141,8 +141,16 @@ function buildAppealContainer(caso, extra) {
   return container;
 }
 
+// Container simple de una sola línea/párrafo (para logs y respuestas rápidas en V2)
+function buildSimpleContainer(text, accentColor = config.EMBED_COLOR) {
+  const container = new ContainerBuilder().setAccentColor(accentColor);
+  container.addTextDisplayComponents(new TextDisplayBuilder().setContent(text));
+  return container;
+}
+
 module.exports = {
   buildMainPanel,
   buildCaseContainer,
   buildAppealContainer,
+  buildSimpleContainer,
 };
