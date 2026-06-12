@@ -4,6 +4,7 @@ const { Client, GatewayIntentBits, Collection, REST, Routes } = require("discord
 const fs = require("fs");
 const { connectDB } = require("./utils/db");
 const { handlePrefixCommand } = require('./handlers/prefixCommands');
+const { handleInteraction } = require('./handlers/interactionHandler');
 
 const client = new Client({
   intents: [
@@ -75,6 +76,39 @@ client.on('messageCreate', async (message) => {
     console.error('❌ Error manejando comando con prefijo:', err);
   }
 });
+client.on("interactionCreate", async interaction => {
+  // Botones y modales (apelaciones)
+  if (interaction.isButton() || interaction.isModalSubmit()) {
+    try {
+      return await handleInteraction(interaction, client);
+    } catch (err) {
+      console.error('❌ Error en interacción de botón/modal:', err);
+      const msg = '❌ Ocurrió un error procesando esta acción.';
+      if (interaction.deferred || interaction.replied) {
+        await interaction.followUp({ content: msg, ephemeral: true }).catch(() => null);
+      } else {
+        await interaction.reply({ content: msg, ephemeral: true }).catch(() => null);
+      }
+    }
+    return;
+  }
+
+  if (!interaction.isChatInputCommand()) return;
+
+  const command = client.commands.get(interaction.commandName);
+  if (!command) return;
+
+  try {
+    await command.execute(interaction);
+  } catch (error) {
+    console.error(error);
+    await interaction.reply({
+      content: "❌ Error ejecutando comando",
+      ephemeral: true
+    });
+  }
+});
+
 
 // 🔌 Conectar a la BD y luego loguear el bot
 (async () => {
