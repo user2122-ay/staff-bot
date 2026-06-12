@@ -12,7 +12,9 @@ module.exports = {
   INTERNAL_AFFAIRS_ROLE_ID: '1413737213094658099',
 
   // Canal donde se envían los transcripts (HTML) al cerrar un ticket
-  TRANSCRIPT_CHANNEL_ID: '1492368430265794641',
+  TRANSCRIPT_CHANNEL_ID: '1413917513720271013',
+  // Canal donde llegan las postulaciones de Staff
+  POSTULACIONES_CHANNEL_ID: '1413747200743313550',
 
   // Roles de Advertencia por nivel
   ADVERTENCIA_ROLES: {
