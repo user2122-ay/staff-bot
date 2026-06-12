@@ -162,12 +162,15 @@ async function handleApelacionButton(interaction, customId) {
   const caseId = parts.slice(2).join('_');
 
   const caso = await SancionStaff.findOne({ caseId });
-  if (!caso) {
-    return interaction.reply({
-      content: `❌ No se encontró el caso \`${caseId}\`.`,
-      flags: MessageFlags.Ephemeral,
-    });
-  }
+if (!caso) {
+  return interaction.editReply(`❌ No se encontró ningún caso con el ID \`${caseId}\`.`);
+}
+
+if (caso.usuarioStaffId !== interaction.user.id) {
+  return interaction.editReply('❌ Solo puedes apelar Advertencias/Sanciones que te hayan sido aplicadas a ti.');
+}
+
+if (caso.estado !== 'activo') {
 
   if (accion === 'reclamar') {
     caso.apelacion.reclamadoPorId = interaction.user.id;
@@ -233,11 +236,19 @@ async function cerrarTicket(interaction, caso) {
       poweredBy: false,
     });
 
+    console.log('📄 Transcript generado:', !!attachment);
+
     const transcriptChannel = await interaction.guild.channels
       .fetch(config.TRANSCRIPT_CHANNEL_ID)
-      .catch(() => null);
+      .catch((err) => {
+        console.error('❌ Error obteniendo canal de transcripts:', err.message);
+        return null;
+      });
+
+    console.log('📂 Canal de transcripts encontrado:', !!transcriptChannel);
 
     if (transcriptChannel) {
+    
       const sentMsg = await transcriptChannel.send({
         content:
           `📄 **Transcript de apelación**\n` +
