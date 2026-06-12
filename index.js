@@ -3,6 +3,7 @@ require("dotenv").config();
 const { Client, GatewayIntentBits, Collection, REST, Routes } = require("discord.js");
 const fs = require("fs");
 const { connectDB } = require("./utils/db");
+const { handlePrefixCommand } = require('./handlers/prefixCommands');
 
 const client = new Client({
   intents: [GatewayIntentBits.Guilds]
@@ -60,6 +61,13 @@ client.on("interactionCreate", async interaction => {
       ephemeral: true
     });
   }
+  client.on('messageCreate', async (message) => {
+  try {
+    await handlePrefixCommand(message);
+  } catch (err) {
+    console.error('❌ Error manejando comando con prefijo:', err);
+  }
+});
 });
 
 // 🔌 Conectar a la BD y luego loguear el bot
