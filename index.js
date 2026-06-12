@@ -2,9 +2,10 @@ require("dotenv").config();
 
 const { Client, GatewayIntentBits, Collection, REST, Routes } = require("discord.js");
 const fs = require("fs");
+const { connectDB } = require("./utils/db");
 
 const client = new Client({
-intents: [GatewayIntentBits.Guilds]
+  intents: [GatewayIntentBits.Guilds]
 });
 
 client.commands = new Collection();
@@ -15,70 +16,54 @@ const commandFiles = fs.readdirSync("./commands").filter(file => file.endsWith("
 const commands = [];
 
 for (const file of commandFiles) {
-const command = require(`./commands/${file}`);
-client.commands.set(command.data.name, command);
-commands.push(command.data.toJSON());
+  const command = require(`./commands/${file}`);
+  client.commands.set(command.data.name, command);
+  commands.push(command.data.toJSON());
 }
 
 // 🚀 Cuando el bot inicia
 client.once("ready", async () => {
-console.log(`✅ Bot encendido como ${client.user.tag}`);
+  console.log(`✅ Bot encendido como ${client.user.tag}`);
 
-try {
-const rest = new REST({ version: "10" }).setToken(process.env.TOKEN);
+  try {
+    const rest = new REST({ version: "10" }).setToken(process.env.TOKEN);
 
-console.log("🔄 Registrando comandos automáticamente...");  
+    console.log("🔄 Registrando comandos automáticamente...");
 
-await rest.put(  
-  Routes.applicationGuildCommands(  
-    process.env.CLIENT_ID,  
-    process.env.GUILD_ID  
-  ),  
-  { body: commands }  
-);  
+    await rest.put(
+      Routes.applicationGuildCommands(
+        process.env.CLIENT_ID,
+        process.env.GUILD_ID
+      ),
+      { body: commands }
+    );
 
-console.log("✅ Comandos registrados automáticamente");
-
-} catch (error) {
-console.error("❌ Error registrando comandos:", error);
-}
+    console.log("✅ Comandos registrados automáticamente");
+  } catch (error) {
+    console.error("❌ Error registrando comandos:", error);
+  }
 });
 
 // 🎮 Ejecutar comandos
 client.on("interactionCreate", async interaction => {
-if (!interaction.isChatInputCommand()) return;
+  if (!interaction.isChatInputCommand()) return;
 
-const command = client.commands.get(interaction.commandName);
-if (!command) return;
+  const command = client.commands.get(interaction.commandName);
+  if (!command) return;
 
-try {
-await command.execute(interaction);
-} catch (error) {
-console.error(error);
-await interaction.reply({
-content: "❌ Error ejecutando comando",
-ephemeral: true
-});
-}
-});
-
-require('dotenv').config();
-const { Client, GatewayIntentBits } = require('discord.js');
-const { connectDB } = require('./utils/db');
-
-const client = new Client({
-  intents: [GatewayIntentBits.Guilds],
+  try {
+    await command.execute(interaction);
+  } catch (error) {
+    console.error(error);
+    await interaction.reply({
+      content: "❌ Error ejecutando comando",
+      ephemeral: true
+    });
+  }
 });
 
-client.once('ready', () => {
-  console.log(`✅ Bot conectado como ${client.user.tag}`);
-});
-
+// 🔌 Conectar a la BD y luego loguear el bot
 (async () => {
   await connectDB();
-  await client.login(process.env.DISCORD_TOKEN);
+  await client.login(process.env.TOKEN);
 })();
-
-// 🔑 Login
-client.login(process.env.TOKEN);
-
