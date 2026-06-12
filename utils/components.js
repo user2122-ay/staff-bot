@@ -215,4 +215,6 @@ module.exports = {
   buildCaseContainer,
   buildAppealContainer,
   buildSimpleContainer,
+  buildPostulacionPanel,
+  buildPostulacionContainer,
 };
