@@ -7,8 +7,8 @@ const config = require('../config');
 const SancionStaff = require('../models/SancionStaff');
 const { buildAppealContainer, buildSimpleContainer } = require('../utils/components');
 const { buildApelarModal } = require('../utils/modals');
-const generateTranscript = require('discord-html-transcripts').default
-  || require('discord-html-transcripts');
+const discordTranscripts = require('discord-html-transcripts');
+const generateTranscript = discordTranscripts.createTranscript || discordTranscripts.default || discordTranscripts;
 
 function parseUserId(text) {
   const match = text.match(/^<@!?(\d+)>$/);
