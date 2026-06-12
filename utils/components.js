@@ -9,15 +9,15 @@ const {
 } = require('discord.js');
 const config = require('../config');
 
+// Panel principal -> solo botón de Apelar
 function buildMainPanel() {
   const container = new ContainerBuilder().setAccentColor(config.EMBED_COLOR);
 
   container.addTextDisplayComponents(
     new TextDisplayBuilder().setContent(
-      '# ⚠️ Panel de Advertencias y Sanciones\n' +
-        'Sistema oficial de control de Staff. Usa los botones para registrar una **Advertencia** o **Sanción**.\n\n' +
-        '> **3 Advertencias** acumuladas equivalen automáticamente a **1 Sanción**.\n' +
-        '> Los roles correspondientes se asignan de forma automática.'
+      '# 📩 Apelaciones de Advertencias y Sanciones\n' +
+        'Si consideras que una Advertencia o Sanción fue injusta, puedes apelarla aquí.\n\n' +
+        '> Necesitarás el **ID del caso** (ej: `ADV-7F3K9Q` o `SAN-2X8M1B`) y explicar tu razón.'
     )
   );
 
@@ -25,24 +25,7 @@ function buildMainPanel() {
     new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small).setDivider(true)
   );
 
-  container.addTextDisplayComponents(
-    new TextDisplayBuilder().setContent(
-      '**→ |  Acciones disponibles**\n' +
-        '🔸 Registrar Advertencia\n' +
-        '🔸 Registrar Sanción\n' +
-        '🔸 Apelar una Advertencia/Sanción existente'
-    )
-  );
-
   const row = new ActionRowBuilder().addComponents(
-    new ButtonBuilder()
-      .setCustomId('panel_advertencia')
-      .setLabel('⚠️ Advertencia')
-      .setStyle(ButtonStyle.Danger),
-    new ButtonBuilder()
-      .setCustomId('panel_sancion')
-      .setLabel('🚫 Sanción')
-      .setStyle(ButtonStyle.Secondary),
     new ButtonBuilder()
       .setCustomId('panel_apelar')
       .setLabel('📩 Apelar Sanción/Advertencia')
@@ -62,6 +45,7 @@ function buildMainPanel() {
   return container;
 }
 
+// Componente que se muestra al aplicar una advertencia/sanción (con su botón de Apelar)
 function buildCaseContainer(caso, extra) {
   const esAdvertencia = caso.tipo === 'advertencia';
   const titulo = esAdvertencia ? '⚠️ Formato de Advertencia' : '🚫 Formato de Sanción';
@@ -105,6 +89,7 @@ function buildCaseContainer(caso, extra) {
   return container;
 }
 
+// Container dentro del ticket de apelación, con botones de gestión
 function buildAppealContainer(caso, extra) {
   const container = new ContainerBuilder().setAccentColor(config.EMBED_COLOR);
 
