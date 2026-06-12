@@ -126,13 +126,18 @@ async function handleApelarModal(interaction, customId) {
     abiertoPorId: interaction.user.id,
   });
 
-  await ticketChannel.send({
-    content: `<@&${config.INTERNAL_AFFAIRS_ROLE_ID}> | <@${interaction.user.id}>`,
-    components: [container],
-    flags: MessageFlags.IsComponentsV2,
-  });
+  // Mensaje normal con las menciones (para que avisen/notifiquen)
+await ticketChannel.send({
+  content: `<@&${config.INTERNAL_AFFAIRS_ROLE_ID}> | <@${interaction.user.id}>`,
+});
 
+// Mensaje con el Container (Components V2)
+await ticketChannel.send({
+  components: [container],
+  flags: MessageFlags.IsComponentsV2,
+});
   await interaction.editReply(
+    
     `✅ Tu apelación para el caso \`${caso.caseId}\` fue creada: ${ticketChannel}`
   );
 }
