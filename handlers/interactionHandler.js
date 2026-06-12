@@ -1,0 +1,261 @@
+const {
+  MessageFlags,
+  PermissionFlagsBits,
+  ChannelType,
+} = require('discord.js');
+const config = require('../config');
+const SancionStaff = require('../models/SancionStaff');
+const { buildAppealContainer } = require('../utils/components');
+const { buildApelarModal } = require('../utils/modals');
+const generateTranscript = require('discord-html-transcripts').default
+  || require('discord-html-transcripts');
+
+function parseUserId(text) {
+  const match = text.match(/^<@!?(\d+)>$/);
+  if (match) return match[1];
+  if (/^\d{15,21}$/.test(text.trim())) return text.trim();
+  return null;
+}
+
+async function handleInteraction(interaction, client) {
+  // ------------------ BOTONES ------------------
+  if (interaction.isButton()) {
+    const { customId } = interaction;
+
+    // Botón "Apelar" del panel principal
+    if (customId === 'panel_apelar') {
+      return interaction.showModal(buildApelarModal());
+    }
+
+    // Botón "Apelar" debajo de un caso específico
+    if (customId.startsWith('apelar_caso_')) {
+      const caseId = customId.replace('apelar_caso_', '');
+      return interaction.showModal(buildApelarModal(caseId));
+    }
+
+    // Botones dentro del ticket de apelación
+    if (customId.startsWith('apelacion_')) {
+      return handleApelacionButton(interaction, customId);
+    }
+  }
+
+  // ------------------ MODALES ------------------
+  if (interaction.isModalSubmit()) {
+    const { customId } = interaction;
+
+    if (customId.startsWith('modal_apelar_')) {
+      return handleApelarModal(interaction, customId);
+    }
+  }
+}
+
+// ========================================================
+// Crear ticket de apelación
+// ========================================================
+async function handleApelarModal(interaction, customId) {
+  await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+
+  let caseId;
+  let razon;
+
+  if (customId === 'modal_apelar_generico') {
+    caseId = interaction.fields.getTextInputValue('case_id').trim().toUpperCase();
+    razon = interaction.fields.getTextInputValue('razon_apelacion');
+  } else {
+    caseId = customId.replace('modal_apelar_', '');
+    razon = interaction.fields.getTextInputValue('razon_apelacion');
+  }
+
+  const caso = await SancionStaff.findOne({ caseId });
+  if (!caso) {
+    return interaction.editReply(`❌ No se encontró ningún caso con el ID \`${caseId}\`.`);
+  }
+
+  if (caso.estado !== 'activo') {
+    return interaction.editReply(
+      `❌ Este caso ya fue procesado (estado actual: \`${caso.estado}\`). No se puede apelar de nuevo.`
+    );
+  }
+
+  const guild = interaction.guild;
+  const parentChannel = await guild.channels
+    .fetch(config.APPEAL_CATEGORY_CHANNEL_ID)
+    .catch(() => null);
+
+  const parentId =
+    parentChannel && parentChannel.type === ChannelType.GuildCategory
+      ? parentChannel.id
+      : parentChannel?.parentId || null;
+
+  const ticketChannel = await guild.channels.create({
+    name: `apelacion-${caso.caseId}`.toLowerCase(),
+    type: ChannelType.GuildText,
+    parent: parentId,
+    topic: `Apelación del caso ${caso.caseId} | Usuario: ${caso.usuarioStaffId} | Abierta por: ${interaction.user.id}`,
+    permissionOverwrites: [
+      {
+        id: guild.roles.everyone.id,
+        deny: [PermissionFlagsBits.ViewChannel],
+      },
+      {
+        id: interaction.user.id,
+        allow: [
+          PermissionFlagsBits.ViewChannel,
+          PermissionFlagsBits.SendMessages,
+          PermissionFlagsBits.ReadMessageHistory,
+        ],
+      },
+      {
+        id: config.INTERNAL_AFFAIRS_ROLE_ID,
+        allow: [
+          PermissionFlagsBits.ViewChannel,
+          PermissionFlagsBits.SendMessages,
+          PermissionFlagsBits.ReadMessageHistory,
+        ],
+      },
+    ],
+  });
+
+  caso.estado = 'apelado';
+  caso.apelacion.ticketChannelId = ticketChannel.id;
+  caso.apelacion.razon = razon;
+  await caso.save();
+
+  const container = buildAppealContainer(caso, {
+    razonApelacion: razon,
+    abiertoPorId: interaction.user.id,
+  });
+
+  await ticketChannel.send({
+    content: `<@&${config.INTERNAL_AFFAIRS_ROLE_ID}> | <@${interaction.user.id}>`,
+    components: [container],
+    flags: MessageFlags.IsComponentsV2,
+  });
+
+  await interaction.editReply(
+    `✅ Tu apelación para el caso \`${caso.caseId}\` fue creada: ${ticketChannel}`
+  );
+}
+
+// ========================================================
+// Botones dentro del ticket (reclamar, aceptar, negar, cerrar)
+// ========================================================
+async function handleApelacionButton(interaction, customId) {
+  const isInternalAffairs = interaction.member.roles.cache.has(
+    config.INTERNAL_AFFAIRS_ROLE_ID
+  );
+
+  if (!isInternalAffairs) {
+    return interaction.reply({
+      content: '❌ Solo Asuntos Internos puede gestionar esta apelación.',
+      flags: MessageFlags.Ephemeral,
+    });
+  }
+
+  const parts = customId.split('_');
+  const accion = parts[1];
+  const caseId = parts.slice(2).join('_');
+
+  const caso = await SancionStaff.findOne({ caseId });
+  if (!caso) {
+    return interaction.reply({
+      content: `❌ No se encontró el caso \`${caseId}\`.`,
+      flags: MessageFlags.Ephemeral,
+    });
+  }
+
+  if (accion === 'reclamar') {
+    caso.apelacion.reclamadoPorId = interaction.user.id;
+    await caso.save();
+    return interaction.reply({
+      content: `🙋 <@${interaction.user.id}> ha reclamado este ticket de apelación.`,
+    });
+  }
+
+  if (accion === 'aceptar' || accion === 'negar') {
+    const resultado = accion === 'aceptar' ? 'aceptada' : 'negada';
+
+    caso.estado = resultado === 'aceptada' ? 'aceptada_apelacion' : 'negada_apelacion';
+    caso.apelacion.resultado = resultado;
+    caso.apelacion.resueltoPorId = interaction.user.id;
+
+    if (resultado === 'aceptada') {
+      const member = await interaction.guild.members
+        .fetch(caso.usuarioStaffId)
+        .catch(() => null);
+
+      if (member && member.roles.cache.has(caso.rolAsignadoId)) {
+        await member.roles.remove(caso.rolAsignadoId).catch(() => null);
+      }
+    }
+
+    await caso.save();
+
+    const emoji = resultado === 'aceptada' ? '✅' : '❌';
+    await interaction.reply({
+      content:
+        `${emoji} La apelación del caso \`${caso.caseId}\` ha sido **${resultado.toUpperCase()}** por <@${interaction.user.id}>.\n` +
+        (resultado === 'aceptada'
+          ? `Se ha revertido el rol asociado a <@${caso.usuarioStaffId}>.`
+          : `El caso permanece activo.`) +
+        `\n\nEste ticket se cerrará automáticamente en 10 segundos...`,
+    });
+
+    setTimeout(() => {
+      cerrarTicket(interaction, caso).catch(console.error);
+    }, 10000);
+    return;
+  }
+
+  if (accion === 'cerrar') {
+    await interaction.reply({ content: '🔒 Cerrando ticket y generando transcript...' });
+    return cerrarTicket(interaction, caso);
+  }
+}
+
+// ========================================================
+// Cerrar ticket + transcript
+// ========================================================
+async function cerrarTicket(interaction, caso) {
+  const channel = interaction.channel;
+
+  try {
+    const attachment = await generateTranscript(channel, {
+      limit: -1,
+      returnType: 'attachment',
+      filename: `transcript-${caso.caseId}.html`,
+      saveImages: true,
+      poweredBy: false,
+    });
+
+    const transcriptChannel = await interaction.guild.channels
+      .fetch(config.TRANSCRIPT_CHANNEL_ID)
+      .catch(() => null);
+
+    if (transcriptChannel) {
+      const sentMsg = await transcriptChannel.send({
+        content:
+          `📄 **Transcript de apelación**\n` +
+          `**Caso:** \`${caso.caseId}\`\n` +
+          `**Usuario del Staff:** <@${caso.usuarioStaffId}>\n` +
+          `**Resultado:** ${caso.apelacion.resultado || 'cerrado sin resolución'}\n` +
+          `**Cerrado por:** <@${interaction.user.id}>`,
+        files: [attachment],
+      });
+
+      const url = sentMsg.attachments.first()?.url || null;
+      caso.apelacion.transcriptUrl = url;
+    }
+  } catch (err) {
+    console.error('❌ Error generando/enviando el transcript:', err);
+  }
+
+  caso.apelacion.cerradoEn = new Date();
+  await caso.save();
+
+  setTimeout(() => {
+    channel.delete().catch(() => null);
+  }, 2000);
+}
+
+module.exports = { handleInteraction };
