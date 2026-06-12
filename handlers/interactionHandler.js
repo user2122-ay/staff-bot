@@ -36,6 +36,9 @@ async function handleInteraction(interaction, client) {
     if (customId.startsWith('apelacion_')) {
       return handleApelacionButton(interaction, customId);
     }
+    if (customId === 'postular_staff') {
+  return interaction.showModal(buildPostulacionModal());
+    }
   }
 
   // ------------------ MODALES ------------------
@@ -44,6 +47,9 @@ async function handleInteraction(interaction, client) {
 
     if (customId.startsWith('modal_apelar_')) {
       return handleApelarModal(interaction, customId);
+    }
+    if (customId === 'modal_postulacion_staff') {
+  return handlePostulacionModal(interaction);
     }
   }
 }
@@ -292,6 +298,37 @@ async function cerrarTicket(interaction, caso) {
   setTimeout(() => {
     channel.delete().catch(() => null);
   }, 2000);
+}
+// ========================================================
+// Enviar postulación de Staff al canal correspondiente
+// ========================================================
+async function handlePostulacionModal(interaction) {
+  await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+
+  const respuestas = {
+    experiencia: interaction.fields.getTextInputValue('experiencia'),
+    concepto_rp: interaction.fields.getTextInputValue('concepto_rp'),
+    situacion_hipotetica: interaction.fields.getTextInputValue('situacion_hipotetica'),
+    caso_erlc: interaction.fields.getTextInputValue('caso_erlc'),
+    manejo_presion: interaction.fields.getTextInputValue('manejo_presion'),
+  };
+
+  const canal = await interaction.guild.channels
+    .fetch(config.POSTULACIONES_CHANNEL_ID)
+    .catch(() => null);
+
+  if (!canal) {
+    return interaction.editReply('❌ No se pudo encontrar el canal de postulaciones. Contacta a un administrador.');
+  }
+
+  const container = buildPostulacionContainer(interaction.user, respuestas);
+
+  await canal.send({
+    components: [container],
+    flags: MessageFlags.IsComponentsV2,
+  });
+
+  await interaction.editReply('✅ Tu postulación fue enviada correctamente. ¡Gracias por participar!');
 }
 
 module.exports = { handleInteraction };
