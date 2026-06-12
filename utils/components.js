@@ -148,6 +148,68 @@ function buildSimpleContainer(text, accentColor = config.EMBED_COLOR) {
   return container;
 }
 
+// Panel para postularse a Staff
+function buildPostulacionPanel() {
+  const container = new ContainerBuilder().setAccentColor(config.EMBED_COLOR);
+
+  container.addTextDisplayComponents(
+    new TextDisplayBuilder().setContent(
+      '# 📋 Postulación a Staff\n' +
+        '¿Quieres formar parte del equipo de Staff? Completa el formulario.\n\n' +
+        '> Responde con sinceridad y la mayor claridad posible. Tus respuestas serán evaluadas por el equipo de Asuntos Internos.'
+    )
+  );
+
+  container.addSeparatorComponents(
+    new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small).setDivider(true)
+  );
+
+  const row = new ActionRowBuilder().addComponents(
+    new ButtonBuilder()
+      .setCustomId('postular_staff')
+      .setLabel('📋 Postularme a Staff')
+      .setStyle(ButtonStyle.Primary)
+  );
+
+  container.addActionRowComponents(row);
+
+  return container;
+}
+
+// Container con las respuestas de una postulación
+function buildPostulacionContainer(usuario, respuestas) {
+  const container = new ContainerBuilder().setAccentColor(config.EMBED_COLOR);
+
+  container.addTextDisplayComponents(
+    new TextDisplayBuilder().setContent(
+      `# 📋 Nueva Postulación a Staff\n**Usuario:** ${usuario.tag} (<@${usuario.id}>)`
+    )
+  );
+
+  container.addSeparatorComponents(
+    new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small).setDivider(true)
+  );
+
+  const body =
+    `**→ |  Experiencia previa:**\n${respuestas.experiencia}\n\n` +
+    `**→ |  ¿Qué es RP para ti?:**\n${respuestas.concepto_rp}\n\n` +
+    `**→ |  Situación hipotética:**\n${respuestas.situacion_hipotetica}\n\n` +
+    `**→ |  Caso ERLC:**\n${respuestas.caso_erlc}\n\n` +
+    `**→ |  Manejo de presión:**\n${respuestas.manejo_presion}`;
+
+  container.addTextDisplayComponents(new TextDisplayBuilder().setContent(body));
+
+  container.addSeparatorComponents(
+    new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small).setDivider(true)
+  );
+
+  container.addTextDisplayComponents(
+    new TextDisplayBuilder().setContent('-# Postulación enviada • Sistema de Reclutamiento')
+  );
+
+  return container;
+}
+
 module.exports = {
   buildMainPanel,
   buildCaseContainer,
