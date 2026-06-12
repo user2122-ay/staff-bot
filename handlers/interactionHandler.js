@@ -5,7 +5,7 @@ const {
 } = require('discord.js');
 const config = require('../config');
 const SancionStaff = require('../models/SancionStaff');
-const { buildAppealContainer } = require('../utils/components');
+const { buildAppealContainer, buildSimpleContainer } = require('../utils/components');
 const { buildApelarModal } = require('../utils/modals');
 const generateTranscript = require('discord-html-transcripts').default
   || require('discord-html-transcripts');
@@ -22,18 +22,15 @@ async function handleInteraction(interaction, client) {
   if (interaction.isButton()) {
     const { customId } = interaction;
 
-    // Botón "Apelar" del panel principal
     if (customId === 'panel_apelar') {
       return interaction.showModal(buildApelarModal());
     }
 
-    // Botón "Apelar" debajo de un caso específico
     if (customId.startsWith('apelar_caso_')) {
       const caseId = customId.replace('apelar_caso_', '');
       return interaction.showModal(buildApelarModal(caseId));
     }
 
-    // Botones dentro del ticket de apelación
     if (customId.startsWith('apelacion_')) {
       return handleApelacionButton(interaction, customId);
     }
@@ -69,6 +66,11 @@ async function handleApelarModal(interaction, customId) {
   const caso = await SancionStaff.findOne({ caseId });
   if (!caso) {
     return interaction.editReply(`❌ No se encontró ningún caso con el ID \`${caseId}\`.`);
+  }
+
+  // Solo el usuario sancionado puede apelar su propio caso
+  if (caso.usuarioStaffId !== interaction.user.id) {
+    return interaction.editReply('❌ Solo puedes apelar Advertencias/Sanciones que te hayan sido aplicadas a ti.');
   }
 
   if (caso.estado !== 'activo') {
@@ -126,18 +128,22 @@ async function handleApelarModal(interaction, customId) {
     abiertoPorId: interaction.user.id,
   });
 
-  // Mensaje normal con las menciones (para que avisen/notifiquen)
-await ticketChannel.send({
-  content: `<@&${config.INTERNAL_AFFAIRS_ROLE_ID}> | <@${interaction.user.id}>`,
-});
+  // Mención de aviso (en V2 va dentro de un TextDisplay, no en "content")
+  const avisoContainer = buildSimpleContainer(
+    `<@&${config.INTERNAL_AFFAIRS_ROLE_ID}> | <@${interaction.user.id}>`
+  );
 
-// Mensaje con el Container (Components V2)
-await ticketChannel.send({
-  components: [container],
-  flags: MessageFlags.IsComponentsV2,
-});
+  await ticketChannel.send({
+    components: [avisoContainer],
+    flags: MessageFlags.IsComponentsV2,
+  });
+
+  await ticketChannel.send({
+    components: [container],
+    flags: MessageFlags.IsComponentsV2,
+  });
+
   await interaction.editReply(
-    
     `✅ Tu apelación para el caso \`${caso.caseId}\` fue creada: ${ticketChannel}`
   );
 }
@@ -162,21 +168,23 @@ async function handleApelacionButton(interaction, customId) {
   const caseId = parts.slice(2).join('_');
 
   const caso = await SancionStaff.findOne({ caseId });
-if (!caso) {
-  return interaction.editReply(`❌ No se encontró ningún caso con el ID \`${caseId}\`.`);
-}
-
-if (caso.usuarioStaffId !== interaction.user.id) {
-  return interaction.editReply('❌ Solo puedes apelar Advertencias/Sanciones que te hayan sido aplicadas a ti.');
-}
-
-if (caso.estado !== 'activo') {
+  if (!caso) {
+    return interaction.reply({
+      content: `❌ No se encontró el caso \`${caseId}\`.`,
+      flags: MessageFlags.Ephemeral,
+    });
+  }
 
   if (accion === 'reclamar') {
     caso.apelacion.reclamadoPorId = interaction.user.id;
     await caso.save();
+
+    const container = buildSimpleContainer(
+      `🙋 <@${interaction.user.id}> ha reclamado este ticket de apelación.`
+    );
     return interaction.reply({
-      content: `🙋 <@${interaction.user.id}> ha reclamado este ticket de apelación.`,
+      components: [container],
+      flags: MessageFlags.IsComponentsV2,
     });
   }
 
@@ -200,13 +208,20 @@ if (caso.estado !== 'activo') {
     await caso.save();
 
     const emoji = resultado === 'aceptada' ? '✅' : '❌';
+    const accent = resultado === 'aceptada' ? config.EMBED_COLOR_OK : config.EMBED_COLOR_DENY;
+
+    const texto =
+      `${emoji} La apelación del caso \`${caso.caseId}\` ha sido **${resultado.toUpperCase()}** por <@${interaction.user.id}>.\n` +
+      (resultado === 'aceptada'
+        ? `Se ha revertido el rol asociado a <@${caso.usuarioStaffId}>.`
+        : `El caso permanece activo.`) +
+      `\n\nEste ticket se cerrará automáticamente en 10 segundos...`;
+
+    const container = buildSimpleContainer(texto, accent);
+
     await interaction.reply({
-      content:
-        `${emoji} La apelación del caso \`${caso.caseId}\` ha sido **${resultado.toUpperCase()}** por <@${interaction.user.id}>.\n` +
-        (resultado === 'aceptada'
-          ? `Se ha revertido el rol asociado a <@${caso.usuarioStaffId}>.`
-          : `El caso permanece activo.`) +
-        `\n\nEste ticket se cerrará automáticamente en 10 segundos...`,
+      components: [container],
+      flags: MessageFlags.IsComponentsV2,
     });
 
     setTimeout(() => {
@@ -216,7 +231,11 @@ if (caso.estado !== 'activo') {
   }
 
   if (accion === 'cerrar') {
-    await interaction.reply({ content: '🔒 Cerrando ticket y generando transcript...' });
+    const container = buildSimpleContainer('🔒 Cerrando ticket y generando transcript...');
+    await interaction.reply({
+      components: [container],
+      flags: MessageFlags.IsComponentsV2,
+    });
     return cerrarTicket(interaction, caso);
   }
 }
@@ -248,7 +267,6 @@ async function cerrarTicket(interaction, caso) {
     console.log('📂 Canal de transcripts encontrado:', !!transcriptChannel);
 
     if (transcriptChannel) {
-    
       const sentMsg = await transcriptChannel.send({
         content:
           `📄 **Transcript de apelación**\n` +
