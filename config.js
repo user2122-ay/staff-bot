@@ -20,6 +20,14 @@ module.exports = {
 
   // Rol que puede aprobar/rechazar sugerencias
   SUGERENCIAS_MOD_ROLE_ID: '1435795663710453860',
+  // Canal de inactividades
+  INACTIVIDAD_CHANNEL_ID: '1474918228429115573',
+
+  // Rol de inactividad (se da al aprobar)
+  INACTIVIDAD_ROL_ID: '1415574506881159230',
+
+  // Días máximos para aprobación automática
+  INACTIVIDAD_AUTO_DIAS: 2,
 
   // Roles de Advertencia por nivel
   ADVERTENCIA_ROLES: {
