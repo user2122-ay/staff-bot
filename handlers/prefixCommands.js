@@ -41,13 +41,9 @@ async function handlePrefixCommand(message) {
     if (message.author.id !== config.PANEL_OWNER_ID) {
       return message.reply('❌ No tienes permiso para usar este comando.');
     }
-    try {
-      const container = buildReportePanel();
-      await message.channel.send({ components: [container], flags: MessageFlags.IsComponentsV2 });
-      await message.delete().catch(() => null);
-    } catch (err) {
-      console.error('❌ Error enviando panel reporte:', err.message);
-    }
+    const container = buildReportePanel();
+    await message.channel.send({ components: [container], flags: MessageFlags.IsComponentsV2 });
+    await message.delete().catch(() => null);
   }
 }
 
