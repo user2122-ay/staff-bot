@@ -295,6 +295,77 @@ function buildInactividadContainer({ usuario, inicioStr, finStr, dias, motivo, e
 
   return container;
 }
+// Panel de shift con botones Entrar/Salir/Ver
+function buildShiftPanel() {
+  const container = new ContainerBuilder().setAccentColor(config.EMBED_COLOR);
+
+  container.addTextDisplayComponents(
+    new TextDisplayBuilder().setContent(
+      '# 🕐 Panel de Shift\n' +
+      'Registra tu entrada y salida de moderación.\n\n' +
+      '> Pulsa **Entrar al Shift** cuando empieces a moderar.\n' +
+      '> Pulsa **Salir del Shift** cuando termines.'
+    )
+  );
+
+  container.addSeparatorComponents(
+    new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small).setDivider(true)
+  );
+
+  const row = new ActionRowBuilder().addComponents(
+    new ButtonBuilder()
+      .setCustomId('shift_entrar')
+      .setLabel('🟢 Entrar al Shift')
+      .setStyle(ButtonStyle.Success),
+    new ButtonBuilder()
+      .setCustomId('shift_salir')
+      .setLabel('🔴 Salir del Shift')
+      .setStyle(ButtonStyle.Danger),
+    new ButtonBuilder()
+      .setCustomId('shift_ver')
+      .setLabel('📊 Ver mis horas')
+      .setStyle(ButtonStyle.Secondary)
+  );
+
+  container.addActionRowComponents(row);
+
+  return container;
+}
+
+// Container con el resumen de horas y sesiones de un usuario
+function buildShiftVerContainer(usuario, shift) {
+  const container = new ContainerBuilder().setAccentColor(config.EMBED_COLOR);
+
+  const horas = Math.floor(shift.totalMinutos / 60);
+  const mins = shift.totalMinutos % 60;
+
+  // Últimas 10 sesiones
+  const sesiones = shift.sesiones.slice(-10).reverse();
+  const sesionesTexto = sesiones.length > 0
+    ? sesiones.map((s, i) => {
+        const entrada = new Date(s.entrada).toLocaleString('es-ES', { timeZone: 'America/Panama' });
+        const salida = s.salida
+          ? new Date(s.salida).toLocaleString('es-ES', { timeZone: 'America/Panama' })
+          : 'En curso';
+        const dur = s.duracionMinutos
+          ? `${Math.floor(s.duracionMinutos / 60)}h ${s.duracionMinutos % 60}m`
+          : '—';
+        return `**${i + 1}.** Entrada: ${entrada}\n   Salida: ${salida} · Duración: ${dur}`;
+      }).join('\n\n')
+    : 'Sin sesiones registradas.';
+
+  container.addTextDisplayComponents(
+    new TextDisplayBuilder().setContent(
+      `# 📊 Shift de ${usuario.tag}\n` +
+      `**→ |  Total acumulado:** ${horas}h ${mins}m\n` +
+      `**→ |  Sesiones totales:** ${shift.sesiones.length}\n` +
+      `**→ |  Estado actual:** ${shift.enShift ? '🟢 En shift' : '🔴 Fuera de shift'}\n\n` +
+      `**── Últimas sesiones ──**\n${sesionesTexto}`
+    )
+  );
+
+  return container;
+}
 module.exports = {
   buildMainPanel,
   buildCaseContainer,
@@ -304,4 +375,6 @@ module.exports = {
   buildPostulacionContainer,
   buildSugerenciaContainer,
   buildInactividadContainer,
+  buildShiftPanel,
+  buildShiftVerContainer,
 };
