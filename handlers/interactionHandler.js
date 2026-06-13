@@ -9,9 +9,7 @@ const { buildAppealContainer, buildSimpleContainer, buildPostulacionContainer, b
 const { buildApelarModal } = require('../utils/modals');
 const discordTranscripts = require('discord-html-transcripts');
 const generateTranscript = discordTranscripts.createTranscript || discordTranscripts.default || discordTranscripts;
-const { buildPostulacionContainer } = require('../utils/components');
 const { buildPostulacionModal } = require('../utils/postulacionModal');
-
 
 function parseUserId(text) {
   const match = text.match(/^<@!?(\d+)>$/);
