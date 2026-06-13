@@ -51,19 +51,25 @@ async function handlePrefixCommand(message) {
 
   await message.delete().catch(() => null);
   }
-  if (cmd === 'panel' && sub === 'reporte') {
+if (cmd === 'panel' && sub === 'reporte') {
+  console.log('📋 Panel reporte solicitado por:', message.author.id);
   if (message.author.id !== config.PANEL_OWNER_ID) {
     return message.reply('❌ No tienes permiso para usar este comando.');
   }
 
-  const container = buildReportePanel();
+  try {
+    const container = buildReportePanel();
+    console.log('✅ Container creado');
 
-  await message.channel.send({
-    components: [container],
-    flags: MessageFlags.IsComponentsV2,
-  });
+    await message.channel.send({
+      components: [container],
+      flags: MessageFlags.IsComponentsV2,
+    });
+    console.log('✅ Panel enviado');
 
-  await message.delete().catch(() => null);
+    await message.delete().catch(() => null);
+  } catch (err) {
+    console.error('❌ Error enviando panel reporte:', err.message);
   }
 }
 
