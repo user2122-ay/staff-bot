@@ -558,13 +558,46 @@ async function handleReporteModal(interaction) {
   const razon = interaction.fields.getTextInputValue('razon');
   const evidencia = interaction.fields.getTextInputValue('evidencia') || null;
 
-  const canal = await interaction.guild.channels
-    .fetch(config.REPORTES_CHANNEL_ID)
+  const guild = interaction.guild;
+
+  const parentChannel = await guild.channels
+    .fetch(config.APPEAL_CATEGORY_CHANNEL_ID)
     .catch(() => null);
 
-  if (!canal) {
-    return interaction.editReply('❌ No se encontró el canal de reportes.');
-  }
+  const parentId =
+    parentChannel && parentChannel.type === ChannelType.GuildCategory
+      ? parentChannel.id
+      : parentChannel?.parentId || null;
+
+  // Crear canal de ticket privado
+  const ticketChannel = await guild.channels.create({
+    name: `reporte-${interaction.user.username}`.toLowerCase(),
+    type: ChannelType.GuildText,
+    parent: parentId,
+    topic: `Reporte de ${interaction.user.tag} | Usuario reportado: ${usuarioReportado}`,
+    permissionOverwrites: [
+      {
+        id: guild.roles.everyone.id,
+        deny: [PermissionFlagsBits.ViewChannel],
+      },
+      {
+        id: interaction.user.id,
+        allow: [
+          PermissionFlagsBits.ViewChannel,
+          PermissionFlagsBits.SendMessages,
+          PermissionFlagsBits.ReadMessageHistory,
+        ],
+      },
+      {
+        id: config.INTERNAL_AFFAIRS_ROLE_ID,
+        allow: [
+          PermissionFlagsBits.ViewChannel,
+          PermissionFlagsBits.SendMessages,
+          PermissionFlagsBits.ReadMessageHistory,
+        ],
+      },
+    ],
+  });
 
   const container = buildReporteContainer({
     reportadoPorId: interaction.user.id,
@@ -574,23 +607,24 @@ async function handleReporteModal(interaction) {
     evidencia,
   });
 
-  // Crear hilo para el seguimiento del reporte
-  const msg = await canal.send({
+  // Ping de Asuntos Internos
+  await ticketChannel.send({
+    content: `<@&${config.INTERNAL_AFFAIRS_ROLE_ID}> | <@${interaction.user.id}>`,
+  });
+
+  await ticketChannel.send({
     components: [container],
     flags: MessageFlags.IsComponentsV2,
   });
 
-  await msg.startThread({
-    name: `🚨 Reporte · ${interaction.user.username}`,
-    autoArchiveDuration: 1440,
-  });
-
-  await interaction.editReply('✅ Tu reporte fue enviado correctamente. Asuntos Internos lo revisará pronto.');
+  await interaction.editReply(
+    `✅ Tu reporte fue creado: ${ticketChannel}`
+  );
 }
-
 // ========================================================
 // Reporte: botones aceptar/rechazar/cerrar
 // ========================================================
+async function handleReporteButton(interaction, customId) {
 async function handleReporteButton(interaction, customId) {
   if (!interaction.member.roles.cache.has(config.INTERNAL_AFFAIRS_ROLE_ID)) {
     return interaction.reply({
@@ -609,7 +643,6 @@ async function handleReporteButton(interaction, customId) {
   else if (customId.startsWith('reporte_rechazar_')) accion = 'rechazado';
   else accion = 'cerrado';
 
-  // Leer info del mensaje original
   const textoOriginal = interaction.message.components[0]?.components
     ?.find(c => c.type === 10)?.content || '';
 
@@ -624,9 +657,8 @@ async function handleReporteButton(interaction, customId) {
   const emoji = accion === 'aceptado' ? '✅' : accion === 'rechazado' ? '❌' : '🔒';
   const accent = accion === 'aceptado' ? 0x2ECC71 : accion === 'rechazado' ? 0x992D22 : 0x95A5A6;
 
-  // Editar el mensaje con el nuevo estado
-  const nuevoContainer = new (require('discord.js').ContainerBuilder)().setAccentColor(accent);
-  const { TextDisplayBuilder, SeparatorBuilder, SeparatorSpacingSize } = require('discord.js');
+  const { ContainerBuilder, TextDisplayBuilder } = require('discord.js');
+  const nuevoContainer = new ContainerBuilder().setAccentColor(accent);
 
   nuevoContainer.addTextDisplayComponents(
     new TextDisplayBuilder().setContent(
@@ -648,32 +680,56 @@ async function handleReporteButton(interaction, customId) {
   // MD al usuario que reportó
   const usuarioReporto = await interaction.client.users.fetch(reportadoPorId).catch(() => null);
   if (usuarioReporto) {
-    const mdTexto =
-      `${emoji} **Tu reporte fue ${accion}.**\n` +
-      `**Usuario reportado:** ${usuarioReportado}\n` +
-      `**Razón:** ${razon}\n` +
-      `**Gestionado por:** ${interaction.user.tag}`;
-
-    await usuarioReporto.send({ content: mdTexto }).catch(() => null);
-  }
-
-  // Transcript al canal de logs
-  const transcriptChannel = await interaction.guild.channels
-    .fetch(config.REPORTES_TRANSCRIPT_CHANNEL_ID)
-    .catch(() => null);
-
-  if (transcriptChannel) {
-    await transcriptChannel.send({
+    await usuarioReporto.send({
       content:
-        `📄 **Reporte ${accion}**\n` +
-        `**Reportado por:** <@${reportadoPorId}>\n` +
+        `${emoji} **Tu reporte fue ${accion}.**\n` +
         `**Usuario reportado:** ${usuarioReportado}\n` +
         `**Razón:** ${razon}\n` +
-        `**Evidencia:** ${evidencia || 'No proporcionada'}\n` +
         `**Gestionado por:** ${interaction.user.tag}`,
-    });
+    }).catch(() => null);
   }
-                                             }
 
+  // Transcript + cerrar canal en 10 segundos
+  const textoAviso = buildSimpleContainer(
+    `${emoji} Reporte **${accion}** por <@${interaction.user.id}>. El ticket se cerrará en 10 segundos...`
+  );
+
+  await interaction.channel.send({
+    components: [textoAviso],
+    flags: MessageFlags.IsComponentsV2,
+  });
+
+  setTimeout(async () => {
+    try {
+      const attachment = await generateTranscript(interaction.channel, {
+        limit: -1,
+        returnType: 'attachment',
+        filename: `reporte-${reportadoPorId}.html`,
+        saveImages: true,
+        poweredBy: false,
+      });
+
+      const transcriptChannel = await interaction.guild.channels
+        .fetch(config.REPORTES_TRANSCRIPT_CHANNEL_ID)
+        .catch(() => null);
+
+      if (transcriptChannel) {
+        await transcriptChannel.send({
+          content:
+            `📄 **Transcript de reporte ${accion}**\n` +
+            `**Reportado por:** <@${reportadoPorId}>\n` +
+            `**Usuario reportado:** ${usuarioReportado}\n` +
+            `**Razón:** ${razon}\n` +
+            `**Gestionado por:** ${interaction.user.tag}`,
+          files: [attachment],
+        });
+      }
+    } catch (err) {
+      console.error('❌ Error generando transcript de reporte:', err.message);
+    }
+
+    interaction.channel.delete().catch(() => null);
+  }, 10000);
+    }
 
 module.exports = { handleInteraction };
