@@ -16,9 +16,7 @@ const client = new Client({
 
 client.commands = new Collection();
 
-// 📁 Cargar comandos
 const commandFiles = fs.readdirSync("./commands").filter(file => file.endsWith(".js"));
-
 const commands = [];
 
 for (const file of commandFiles) {
@@ -27,26 +25,18 @@ for (const file of commandFiles) {
   commands.push(command.data.toJSON());
 }
 
-// 🚀 Cuando el bot inicia
 client.once("ready", async () => {
   console.log(`✅ Bot encendido como ${client.user.tag}`);
-
   try {
     const rest = new REST({ version: "10" }).setToken(process.env.TOKEN);
-
     console.log("🔄 Registrando comandos automáticamente...");
-
     await rest.put(
-      Routes.applicationGuildCommands(
-        process.env.CLIENT_ID,
-        process.env.GUILD_ID
-      ),
+      Routes.applicationGuildCommands(process.env.CLIENT_ID, process.env.GUILD_ID),
       { body: commands }
     );
-
     console.log("✅ Comandos registrados automáticamente");
   } catch (error) {
-    console.error("❌ Error registrando comandos:", error);
+    console.error("❌ Error registrando comandos:", error.message);
   }
 });
 
@@ -83,13 +73,19 @@ client.on("interactionCreate", async interaction => {
   }
 });
 
-// Evitar que errores no manejados tiren el bot
+// 💬 Comandos con prefijo "!"
+client.on('messageCreate', async (message) => {
+  try {
+    await handlePrefixCommand(message);
+  } catch (err) {
+    console.error('❌ Error manejando comando con prefijo:', err.message);
+  }
+});
+
 process.on('unhandledRejection', (err) => {
   console.error('❌ Error no manejado:', err.message);
 });
 
-
-// 🔌 Conectar a la BD y luego loguear el bot
 (async () => {
   await connectDB();
   await client.login(process.env.TOKEN);
