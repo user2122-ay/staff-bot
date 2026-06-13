@@ -253,6 +253,48 @@ function buildSugerenciaContainer(usuario, texto, estado) {
 
   return container;
 }
+function buildInactividadContainer({ usuario, inicioStr, finStr, dias, motivo, estado, gestedoPorTag }) {
+  const esAprobada = estado === 'aprobada';
+  const esRechazada = estado === 'rechazada';
+
+  const accent = esAprobada ? 0x2ECC71 : esRechazada ? 0x992D22 : config.EMBED_COLOR;
+  const estadoTexto = esAprobada ? '✅ Aprobada' : esRechazada ? '❌ Rechazada' : '🟡 Pendiente';
+
+  const container = new ContainerBuilder().setAccentColor(accent);
+
+  container.addTextDisplayComponents(
+    new TextDisplayBuilder().setContent(
+      `# 🌙 Solicitud de Inactividad\n` +
+      `**→ |  Usuario:** ${usuario.tag} (<@${usuario.id}>)\n\n` +
+      `**→ |  Inicio:** ${inicioStr}\n` +
+      `**→ |  Fin:** ${finStr}\n` +
+      `**→ |  Duración:** ${dias} día${dias === 1 ? '' : 's'}\n\n` +
+      `**→ |  Motivo:** ${motivo}\n\n` +
+      `**→ |  Estado:** ${estadoTexto}` +
+      (gestedoPorTag ? `\n**→ |  Gestionado por:** ${gestedoPorTag}` : '')
+    )
+  );
+
+  container.addSeparatorComponents(
+    new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small).setDivider(true)
+  );
+
+  if (estado === 'pendiente') {
+    const row = new ActionRowBuilder().addComponents(
+      new ButtonBuilder()
+        .setCustomId(`inactividad_aprobar_${usuario.id}`)
+        .setLabel('✅ Aprobar')
+        .setStyle(ButtonStyle.Success),
+      new ButtonBuilder()
+        .setCustomId(`inactividad_rechazar_${usuario.id}`)
+        .setLabel('❌ Rechazar')
+        .setStyle(ButtonStyle.Danger)
+    );
+    container.addActionRowComponents(row);
+  }
+
+  return container;
+}
 module.exports = {
   buildMainPanel,
   buildCaseContainer,
@@ -261,4 +303,5 @@ module.exports = {
   buildPostulacionPanel,
   buildPostulacionContainer,
   buildSugerenciaContainer,
+  buildInactividadContainer,
 };
