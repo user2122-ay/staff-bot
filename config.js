@@ -30,7 +30,11 @@ module.exports = {
   INACTIVIDAD_AUTO_DIAS: 2,
   // Rol autorizado para /shift admin
   SHIFT_ADMIN_ROLE_ID: '1435795663710453860',
+// Canal donde llegan los reportes
+  REPORTES_CHANNEL_ID: '1413747645318696970',
 
+  // Canal de transcripts de reportes
+  REPORTES_TRANSCRIPT_CHANNEL_ID: '1413917513720271013',
   // Roles de Advertencia por nivel
   ADVERTENCIA_ROLES: {
     1: '1458617234783076457',
