@@ -1,6 +1,7 @@
 const { MessageFlags } = require('discord.js');
 const config = require('../config');
 const { buildMainPanel, buildPostulacionPanel, buildShiftPanel, buildReportePanel } = require('../utils/components');
+
 async function handlePrefixCommand(message) {
   if (message.author.bot) return;
   if (!message.content.startsWith('!')) return;
@@ -13,63 +14,40 @@ async function handlePrefixCommand(message) {
     if (message.author.id !== config.PANEL_OWNER_ID) {
       return message.reply('❌ No tienes permiso para usar este comando.');
     }
-
     const container = buildMainPanel();
-
-    await message.channel.send({
-      components: [container],
-      flags: MessageFlags.IsComponentsV2,
-    });
-
+    await message.channel.send({ components: [container], flags: MessageFlags.IsComponentsV2 });
     await message.delete().catch(() => null);
   }
+
   if (cmd === 'panel' && sub === 'staff') {
-  if (message.author.id !== config.PANEL_OWNER_ID) {
-    return message.reply('❌ No tienes permiso para usar este comando.');
-  }
-
-  const container = buildPostulacionPanel();
-
-  await message.channel.send({
-    components: [container],
-    flags: MessageFlags.IsComponentsV2,
-  });
-
-  await message.delete().catch(() => null);
-  }
-  if (cmd === 'panel' && sub === 'shift') {
-  if (message.author.id !== config.PANEL_OWNER_ID) {
-    return message.reply('❌ No tienes permiso para usar este comando.');
-  }
-
-  const container = buildShiftPanel();
-
-  await message.channel.send({
-    components: [container],
-    flags: MessageFlags.IsComponentsV2,
-  });
-
-  await message.delete().catch(() => null);
-  }
-if (cmd === 'panel' && sub === 'reporte') {
-  console.log('📋 Panel reporte solicitado por:', message.author.id);
-  if (message.author.id !== config.PANEL_OWNER_ID) {
-    return message.reply('❌ No tienes permiso para usar este comando.');
-  }
-
-  try {
-    const container = buildReportePanel();
-    console.log('✅ Container creado');
-
-    await message.channel.send({
-      components: [container],
-      flags: MessageFlags.IsComponentsV2,
-    });
-    console.log('✅ Panel enviado');
-
+    if (message.author.id !== config.PANEL_OWNER_ID) {
+      return message.reply('❌ No tienes permiso para usar este comando.');
+    }
+    const container = buildPostulacionPanel();
+    await message.channel.send({ components: [container], flags: MessageFlags.IsComponentsV2 });
     await message.delete().catch(() => null);
-  } catch (err) {
-    console.error('❌ Error enviando panel reporte:', err.message);
+  }
+
+  if (cmd === 'panel' && sub === 'shift') {
+    if (message.author.id !== config.PANEL_OWNER_ID) {
+      return message.reply('❌ No tienes permiso para usar este comando.');
+    }
+    const container = buildShiftPanel();
+    await message.channel.send({ components: [container], flags: MessageFlags.IsComponentsV2 });
+    await message.delete().catch(() => null);
+  }
+
+  if (cmd === 'panel' && sub === 'reporte') {
+    if (message.author.id !== config.PANEL_OWNER_ID) {
+      return message.reply('❌ No tienes permiso para usar este comando.');
+    }
+    try {
+      const container = buildReportePanel();
+      await message.channel.send({ components: [container], flags: MessageFlags.IsComponentsV2 });
+      await message.delete().catch(() => null);
+    } catch (err) {
+      console.error('❌ Error enviando panel reporte:', err.message);
+    }
   }
 }
 
