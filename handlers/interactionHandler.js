@@ -5,13 +5,13 @@ const {
 } = require('discord.js');
 const config = require('../config');
 const SancionStaff = require('../models/SancionStaff');
-const { buildAppealContainer, buildSimpleContainer } = require('../utils/components');
+const { buildAppealContainer, buildSimpleContainer, buildPostulacionContainer, buildSugerenciaContainer } = require('../utils/components');
 const { buildApelarModal } = require('../utils/modals');
 const discordTranscripts = require('discord-html-transcripts');
 const generateTranscript = discordTranscripts.createTranscript || discordTranscripts.default || discordTranscripts;
 const { buildPostulacionContainer } = require('../utils/components');
 const { buildPostulacionModal } = require('../utils/postulacionModal');
-const { buildAppealContainer, buildSimpleContainer, buildPostulacionContainer, buildSugerenciaContainer } = require('../utils/components');
+
 
 function parseUserId(text) {
   const match = text.match(/^<@!?(\d+)>$/);
