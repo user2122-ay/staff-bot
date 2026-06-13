@@ -625,7 +625,6 @@ async function handleReporteModal(interaction) {
 // Reporte: botones aceptar/rechazar/cerrar
 // ========================================================
 async function handleReporteButton(interaction, customId) {
-async function handleReporteButton(interaction, customId) {
   if (!interaction.member.roles.cache.has(config.INTERNAL_AFFAIRS_ROLE_ID)) {
     return interaction.reply({
       content: '❌ Solo Asuntos Internos puede gestionar los reportes.',
@@ -727,9 +726,8 @@ async function handleReporteButton(interaction, customId) {
     } catch (err) {
       console.error('❌ Error generando transcript de reporte:', err.message);
     }
-
     interaction.channel.delete().catch(() => null);
   }, 10000);
-    }
-
-module.exports = { handleInteraction };
+}
+ 
+module.exports = { handleInteraction }; 
