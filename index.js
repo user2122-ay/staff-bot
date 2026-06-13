@@ -50,39 +50,12 @@ client.once("ready", async () => {
   }
 });
 
-// 🎮 Ejecutar comandos slash
 client.on("interactionCreate", async interaction => {
-  if (!interaction.isChatInputCommand()) return;
-
-  const command = client.commands.get(interaction.commandName);
-  if (!command) return;
-
-  try {
-    await command.execute(interaction);
-  } catch (error) {
-    console.error(error);
-    await interaction.reply({
-      content: "❌ Error ejecutando comando",
-      ephemeral: true
-    });
-  }
-});
-
-// 💬 Comandos con prefijo "!"
-client.on('messageCreate', async (message) => {
-  try {
-    await handlePrefixCommand(message);
-  } catch (err) {
-    console.error('❌ Error manejando comando con prefijo:', err);
-  }
-});
-client.on("interactionCreate", async interaction => {
-  // Botones y modales (apelaciones)
   if (interaction.isButton() || interaction.isModalSubmit()) {
     try {
       return await handleInteraction(interaction, client);
     } catch (err) {
-      console.error('❌ Error en interacción de botón/modal:', err);
+      console.error('❌ Error en interacción de botón/modal:', err.message);
       const msg = '❌ Ocurrió un error procesando esta acción.';
       if (interaction.deferred || interaction.replied) {
         await interaction.followUp({ content: msg, ephemeral: true }).catch(() => null);
@@ -101,12 +74,18 @@ client.on("interactionCreate", async interaction => {
   try {
     await command.execute(interaction);
   } catch (error) {
-    console.error(error);
-    await interaction.reply({
-      content: "❌ Error ejecutando comando",
-      ephemeral: true
-    });
+    console.error('❌ Error ejecutando comando:', error.message);
+    if (interaction.deferred || interaction.replied) {
+      await interaction.followUp({ content: '❌ Error ejecutando comando', ephemeral: true }).catch(() => null);
+    } else {
+      await interaction.reply({ content: '❌ Error ejecutando comando', ephemeral: true }).catch(() => null);
+    }
   }
+});
+
+// Evitar que errores no manejados tiren el bot
+process.on('unhandledRejection', (err) => {
+  console.error('❌ Error no manejado:', err.message);
 });
 
 
