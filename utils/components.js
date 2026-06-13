@@ -210,6 +210,49 @@ function buildPostulacionContainer(usuario, respuestas) {
   return container;
 }
 
+function buildSugerenciaContainer(usuario, texto, estado) {
+  const esAceptada = estado === 'aceptada';
+  const esRechazada = estado === 'rechazada';
+
+  const accent = esAceptada ? 0x2ECC71 : esRechazada ? 0x992D22 : config.EMBED_COLOR;
+
+  const estadoTexto = esAceptada
+    ? '✅ Aceptada'
+    : esRechazada
+    ? '❌ Rechazada'
+    : '🟡 Pendiente';
+
+  const container = new ContainerBuilder().setAccentColor(accent);
+
+  container.addTextDisplayComponents(
+    new TextDisplayBuilder().setContent(
+      `# 💡 Sugerencia\n**→ |  Autor:** ${usuario.tag} (<@${usuario.id}>)\n\n` +
+      `**→ |  Sugerencia:**\n${texto}\n\n` +
+      `**→ |  Estado:** ${estadoTexto}`
+    )
+  );
+
+  container.addSeparatorComponents(
+    new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small).setDivider(true)
+  );
+
+  // Solo mostrar botones si está pendiente
+  if (estado === 'pendiente') {
+    const row = new ActionRowBuilder().addComponents(
+      new ButtonBuilder()
+        .setCustomId(`sugerencia_aceptar_${usuario.id}_${Date.now()}`)
+        .setLabel('✅ Aprobar')
+        .setStyle(ButtonStyle.Success),
+      new ButtonBuilder()
+        .setCustomId(`sugerencia_rechazar_${usuario.id}_${Date.now()}`)
+        .setLabel('❌ Rechazar')
+        .setStyle(ButtonStyle.Danger)
+    );
+    container.addActionRowComponents(row);
+  }
+
+  return container;
+}
 module.exports = {
   buildMainPanel,
   buildCaseContainer,
@@ -217,4 +260,5 @@ module.exports = {
   buildSimpleContainer,
   buildPostulacionPanel,
   buildPostulacionContainer,
+  buildSugerenciaContainer,
 };
