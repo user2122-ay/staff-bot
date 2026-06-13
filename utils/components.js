@@ -366,6 +366,85 @@ function buildShiftVerContainer(usuario, shift) {
 
   return container;
 }
+function buildReportePanel() {
+  const container = new ContainerBuilder().setAccentColor(config.EMBED_COLOR);
+
+  container.addTextDisplayComponents(
+    new TextDisplayBuilder().setContent(
+      '# 🚨 Panel de Reportes\n' +
+      'Si necesitas reportar a un miembro del Staff por mal comportamiento, usa el botón de abajo.\n\n' +
+      '> Los reportes son revisados por **Asuntos Internos**.\n' +
+      '> Reportes falsos o malintencionados pueden resultar en sanciones.'
+    )
+  );
+
+  container.addSeparatorComponents(
+    new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small).setDivider(true)
+  );
+
+  const row = new ActionRowBuilder().addComponents(
+    new ButtonBuilder()
+      .setCustomId('reporte_abrir')
+      .setLabel('🚨 Reportar miembro')
+      .setStyle(ButtonStyle.Danger)
+  );
+
+  container.addActionRowComponents(row);
+
+  container.addSeparatorComponents(
+    new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small).setDivider(true)
+  );
+
+  container.addTextDisplayComponents(
+    new TextDisplayBuilder().setContent('-# Sistema de Asuntos Internos · Reportes')
+  );
+
+  return container;
+}
+
+function buildReporteContainer(extra) {
+  const container = new ContainerBuilder().setAccentColor(0xE74C3C);
+
+  container.addTextDisplayComponents(
+    new TextDisplayBuilder().setContent('# 🚨 Nuevo Reporte')
+  );
+
+  container.addSeparatorComponents(
+    new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small).setDivider(true)
+  );
+
+  const body =
+    `**→ |  Reportado por:** ${extra.reportadoPorTag} (<@${extra.reportadoPorId}>)\n\n` +
+    `**→ |  Usuario reportado:** ${extra.usuarioReportado}\n\n` +
+    `**→ |  Razón:** ${extra.razon}\n\n` +
+    `**→ |  Evidencia:** ${extra.evidencia || 'No proporcionada'}\n\n` +
+    `**→ |  Estado:** 🟡 Pendiente de revisión`;
+
+  container.addTextDisplayComponents(new TextDisplayBuilder().setContent(body));
+
+  container.addSeparatorComponents(
+    new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small).setDivider(true)
+  );
+
+  const row = new ActionRowBuilder().addComponents(
+    new ButtonBuilder()
+      .setCustomId(`reporte_aceptar_${extra.reportadoPorId}`)
+      .setLabel('✅ Aceptar')
+      .setStyle(ButtonStyle.Success),
+    new ButtonBuilder()
+      .setCustomId(`reporte_rechazar_${extra.reportadoPorId}`)
+      .setLabel('❌ Rechazar')
+      .setStyle(ButtonStyle.Danger),
+    new ButtonBuilder()
+      .setCustomId(`reporte_cerrar_${extra.reportadoPorId}`)
+      .setLabel('🔒 Cerrar')
+      .setStyle(ButtonStyle.Secondary)
+  );
+
+  container.addActionRowComponents(row);
+
+  return container;
+}
 module.exports = {
   buildMainPanel,
   buildCaseContainer,
@@ -377,4 +456,6 @@ module.exports = {
   buildInactividadContainer,
   buildShiftPanel,
   buildShiftVerContainer,
+  buildReportePanel,
+  buildReporteContainer,
 };
