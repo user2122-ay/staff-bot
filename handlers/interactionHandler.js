@@ -398,7 +398,6 @@ async function handleInactividadButton(interaction, customId) {
   const accion = customId.startsWith('inactividad_aprobar_') ? 'aprobada' : 'rechazada';
   const usuarioId = customId.replace('inactividad_aprobar_', '').replace('inactividad_rechazar_', '');
 
-  // Leer info del mensaje original
   const textoOriginal = interaction.message.components[0]?.components
     ?.find(c => c.type === 10)?.content || '';
 
@@ -435,7 +434,6 @@ async function handleInactividadButton(interaction, customId) {
     await member.roles.add(config.INACTIVIDAD_ROL_ID).catch(() => null);
   }
 
-  // MD al usuario
   const usuarioDiscord = await interaction.client.users.fetch(usuarioId).catch(() => null);
   if (usuarioDiscord) {
     const mdTexto = accion === 'aprobada'
@@ -445,7 +443,6 @@ async function handleInactividadButton(interaction, customId) {
     await usuarioDiscord.send({ content: mdTexto }).catch(() => null);
   }
 
-  // Mensaje en el canal
   const canalInactividad = await interaction.guild.channels
     .fetch(config.INACTIVIDAD_CHANNEL_ID)
     .catch(() => null);
@@ -456,7 +453,9 @@ async function handleInactividadButton(interaction, customId) {
       content: `${emoji} La inactividad de <@${usuarioId}> fue **${accion}** por <@${interaction.user.id}>.`,
     });
   }
-  // ========================================================
+}
+
+// ========================================================
 // Shift: entrar, salir, ver
 // ========================================================
 async function handleShiftButton(interaction, customId) {
@@ -496,7 +495,6 @@ async function handleShiftButton(interaction, customId) {
     const ahora = new Date();
     const duracion = Math.floor((ahora - shift.entradaActual) / 60000);
 
-    // Actualizar última sesión
     const ultimaSesion = shift.sesiones[shift.sesiones.length - 1];
     ultimaSesion.salida = ahora;
     ultimaSesion.duracionMinutos = duracion;
@@ -537,5 +535,5 @@ async function handleShiftButton(interaction, customId) {
     });
   }
 }
-    }
+
 module.exports = { handleInteraction };
