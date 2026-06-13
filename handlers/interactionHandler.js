@@ -5,7 +5,7 @@ const {
 } = require('discord.js');
 const config = require('../config');
 const SancionStaff = require('../models/SancionStaff');
-const { buildAppealContainer, buildSimpleContainer, buildPostulacionContainer, buildSugerenciaContainer } = require('../utils/components');
+const { buildAppealContainer, buildSimpleContainer, buildPostulacionContainer, buildSugerenciaContainer, buildInactividadContainer } = require('../utils/components');
 const { buildApelarModal } = require('../utils/modals');
 const discordTranscripts = require('discord-html-transcripts');
 const generateTranscript = discordTranscripts.createTranscript || discordTranscripts.default || discordTranscripts;
@@ -41,6 +41,9 @@ async function handleInteraction(interaction, client) {
  if (customId.startsWith('sugerencia_aceptar_') || customId.startsWith('sugerencia_rechazar_')) {
   return handleSugerenciaButton(interaction, customId);
  } 
+    if (customId.startsWith('inactividad_aprobar_') || customId.startsWith('inactividad_rechazar_')) {
+  return handleInactividadButton(interaction, customId);
+    }
   }
  
  
@@ -377,4 +380,77 @@ async function handleSugerenciaButton(interaction, customId) {
     flags: MessageFlags.IsComponentsV2,
   });
 }
+// ========================================================
+// Aprobar / Rechazar inactividad
+// ========================================================
+async function handleInactividadButton(interaction, customId) {
+  if (!interaction.member.roles.cache.has(config.SUGERENCIAS_MOD_ROLE_ID)) {
+    return interaction.reply({
+      content: '❌ No tienes permiso para gestionar inactividades.',
+      flags: MessageFlags.Ephemeral,
+    });
+  }
+
+  const accion = customId.startsWith('inactividad_aprobar_') ? 'aprobada' : 'rechazada';
+  const usuarioId = customId.replace('inactividad_aprobar_', '').replace('inactividad_rechazar_', '');
+
+  // Leer info del mensaje original
+  const textoOriginal = interaction.message.components[0]?.components
+    ?.find(c => c.type === 10)?.content || '';
+
+  const inicioMatch = textoOriginal.match(/\*\*→ \|  Inicio:\*\* (.+)/);
+  const finMatch = textoOriginal.match(/\*\*→ \|  Fin:\*\* (.+)/);
+  const diasMatch = textoOriginal.match(/\*\*→ \|  Duración:\*\* (\d+)/);
+  const motivoMatch = textoOriginal.match(/\*\*→ \|  Motivo:\*\* ([\s\S]+?)\n\n\*\*→ \|  Estado/);
+
+  const inicioStr = inicioMatch ? inicioMatch[1] : '?';
+  const finStr = finMatch ? finMatch[1] : '?';
+  const dias = diasMatch ? parseInt(diasMatch[1]) : 0;
+  const motivo = motivoMatch ? motivoMatch[1] : '?';
+
+  const usuarioObj = { id: usuarioId, tag: `<@${usuarioId}>` };
+
+  const nuevoContainer = buildInactividadContainer({
+    usuario: usuarioObj,
+    inicioStr,
+    finStr,
+    dias,
+    motivo,
+    estado: accion,
+    gestedoPorTag: interaction.user.tag,
+  });
+
+  await interaction.update({
+    components: [nuevoContainer],
+    flags: MessageFlags.IsComponentsV2,
+  });
+
+  const member = await interaction.guild.members.fetch(usuarioId).catch(() => null);
+
+  if (accion === 'aprobada' && member) {
+    await member.roles.add(config.INACTIVIDAD_ROL_ID).catch(() => null);
+  }
+
+  // MD al usuario
+  const usuarioDiscord = await interaction.client.users.fetch(usuarioId).catch(() => null);
+  if (usuarioDiscord) {
+    const mdTexto = accion === 'aprobada'
+      ? `✅ **Tu solicitud de inactividad fue aprobada.**\n**Período:** ${inicioStr} → ${finStr} (${dias} día${dias === 1 ? '' : 's'})\n**Motivo:** ${motivo}\nSe te asignó el rol de inactividad.`
+      : `❌ **Tu solicitud de inactividad fue rechazada.**\n**Período:** ${inicioStr} → ${finStr}\n**Motivo:** ${motivo}\nContacta al staff para más información.`;
+
+    await usuarioDiscord.send({ content: mdTexto }).catch(() => null);
+  }
+
+  // Mensaje en el canal
+  const canalInactividad = await interaction.guild.channels
+    .fetch(config.INACTIVIDAD_CHANNEL_ID)
+    .catch(() => null);
+
+  if (canalInactividad) {
+    const emoji = accion === 'aprobada' ? '✅' : '❌';
+    await canalInactividad.send({
+      content: `${emoji} La inactividad de <@${usuarioId}> fue **${accion}** por <@${interaction.user.id}>.`,
+    });
+  }
+    }
 module.exports = { handleInteraction };
