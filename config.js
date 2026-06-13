@@ -28,6 +28,8 @@ module.exports = {
 
   // Días máximos para aprobación automática
   INACTIVIDAD_AUTO_DIAS: 2,
+  // Rol autorizado para /shift admin
+  SHIFT_ADMIN_ROLE_ID: '1435795663710453860',
 
   // Roles de Advertencia por nivel
   ADVERTENCIA_ROLES: {
