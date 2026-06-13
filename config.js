@@ -15,6 +15,11 @@ module.exports = {
   TRANSCRIPT_CHANNEL_ID: '1413917513720271013',
   // Canal donde llegan las postulaciones de Staff
   POSTULACIONES_CHANNEL_ID: '1492368430265794641',
+  // Canal de sugerencias
+  SUGERENCIAS_CHANNEL_ID: '1413746104306237571',
+
+  // Rol que puede aprobar/rechazar sugerencias
+  SUGERENCIAS_MOD_ROLE_ID: '1435795663710453860',
 
   // Roles de Advertencia por nivel
   ADVERTENCIA_ROLES: {
