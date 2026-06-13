@@ -5,7 +5,8 @@ const {
 } = require('discord.js');
 const config = require('../config');
 const SancionStaff = require('../models/SancionStaff');
-const { buildAppealContainer, buildSimpleContainer, buildPostulacionContainer, buildSugerenciaContainer, buildInactividadContainer } = require('../utils/components');
+const { buildAppealContainer, buildSimpleContainer, buildPostulacionContainer, buildSugerenciaContainer, buildInactividadContainer, buildShiftPanel, buildShiftVerContainer } = require('../utils/components');
+const Shift = require('../models/Shift');
 const { buildApelarModal } = require('../utils/modals');
 const discordTranscripts = require('discord-html-transcripts');
 const generateTranscript = discordTranscripts.createTranscript || discordTranscripts.default || discordTranscripts;
@@ -43,6 +44,9 @@ async function handleInteraction(interaction, client) {
  } 
     if (customId.startsWith('inactividad_aprobar_') || customId.startsWith('inactividad_rechazar_')) {
   return handleInactividadButton(interaction, customId);
+    }
+    if (customId === 'shift_entrar' || customId === 'shift_salir' || customId === 'shift_ver') {
+  return handleShiftButton(interaction, customId);
     }
   }
  
@@ -452,5 +456,86 @@ async function handleInactividadButton(interaction, customId) {
       content: `${emoji} La inactividad de <@${usuarioId}> fue **${accion}** por <@${interaction.user.id}>.`,
     });
   }
+  // ========================================================
+// Shift: entrar, salir, ver
+// ========================================================
+async function handleShiftButton(interaction, customId) {
+  await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+
+  const usuarioId = interaction.user.id;
+
+  if (customId === 'shift_entrar') {
+    let shift = await Shift.findOne({ usuarioId });
+    if (!shift) shift = await Shift.create({ usuarioId });
+
+    if (shift.enShift) {
+      return interaction.editReply('⚠️ Ya estás en shift. Sal primero antes de entrar de nuevo.');
+    }
+
+    shift.enShift = true;
+    shift.entradaActual = new Date();
+    shift.sesiones.push({ entrada: shift.entradaActual });
+    await shift.save();
+
+    const container = buildSimpleContainer(
+      `🟢 Entraste al shift a las **${shift.entradaActual.toLocaleTimeString('es-ES', { timeZone: 'America/Panama' })}**. ¡Buena moderación!`
+    );
+    return interaction.editReply({
+      components: [container],
+      flags: MessageFlags.IsComponentsV2,
+    });
+  }
+
+  if (customId === 'shift_salir') {
+    const shift = await Shift.findOne({ usuarioId });
+
+    if (!shift || !shift.enShift) {
+      return interaction.editReply('⚠️ No estás en shift actualmente.');
+    }
+
+    const ahora = new Date();
+    const duracion = Math.floor((ahora - shift.entradaActual) / 60000);
+
+    // Actualizar última sesión
+    const ultimaSesion = shift.sesiones[shift.sesiones.length - 1];
+    ultimaSesion.salida = ahora;
+    ultimaSesion.duracionMinutos = duracion;
+
+    shift.totalMinutos += duracion;
+    shift.enShift = false;
+    shift.entradaActual = null;
+    shift.markModified('sesiones');
+    await shift.save();
+
+    const horas = Math.floor(duracion / 60);
+    const mins = duracion % 60;
+    const totalH = Math.floor(shift.totalMinutos / 60);
+    const totalM = shift.totalMinutos % 60;
+
+    const container = buildSimpleContainer(
+      `🔴 Saliste del shift.\n` +
+      `**Duración de esta sesión:** ${horas}h ${mins}m\n` +
+      `**Total acumulado:** ${totalH}h ${totalM}m`
+    );
+    return interaction.editReply({
+      components: [container],
+      flags: MessageFlags.IsComponentsV2,
+    });
+  }
+
+  if (customId === 'shift_ver') {
+    const shift = await Shift.findOne({ usuarioId });
+
+    if (!shift || shift.sesiones.length === 0) {
+      return interaction.editReply('❌ No tienes sesiones registradas aún.');
+    }
+
+    const container = buildShiftVerContainer(interaction.user, shift);
+    return interaction.editReply({
+      components: [container],
+      flags: MessageFlags.IsComponentsV2,
+    });
+  }
+}
     }
 module.exports = { handleInteraction };
