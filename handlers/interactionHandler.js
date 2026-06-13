@@ -11,6 +11,7 @@ const discordTranscripts = require('discord-html-transcripts');
 const generateTranscript = discordTranscripts.createTranscript || discordTranscripts.default || discordTranscripts;
 const { buildPostulacionContainer } = require('../utils/components');
 const { buildPostulacionModal } = require('../utils/postulacionModal');
+const { buildAppealContainer, buildSimpleContainer, buildPostulacionContainer, buildSugerenciaContainer } = require('../utils/components');
 
 function parseUserId(text) {
   const match = text.match(/^<@!?(\d+)>$/);
@@ -39,7 +40,12 @@ async function handleInteraction(interaction, client) {
     if (customId === 'postular_staff') {
   return interaction.showModal(buildPostulacionModal());
     }
+ if (customId.startsWith('sugerencia_aceptar_') || customId.startsWith('sugerencia_rechazar_')) {
+  return handleSugerenciaButton(interaction, customId);
+ } 
   }
+ 
+ 
 
   // ------------------ MODALES ------------------
   if (interaction.isModalSubmit()) {
@@ -331,4 +337,46 @@ async function handlePostulacionModal(interaction) {
   await interaction.editReply('✅ Tu postulación fue enviada correctamente. ¡Gracias por participar!');
 }
 
+// ========================================================
+// Aprobar / Rechazar sugerencia
+// ========================================================
+async function handleSugerenciaButton(interaction, customId) {
+  if (!interaction.member.roles.cache.has(config.SUGERENCIAS_MOD_ROLE_ID)) {
+    return interaction.reply({
+      content: '❌ No tienes permiso para gestionar sugerencias.',
+      flags: MessageFlags.Ephemeral,
+    });
+  }
+
+  const accion = customId.startsWith('sugerencia_aceptar_') ? 'aceptada' : 'rechazada';
+
+  // Reconstruir el container con el nuevo estado
+  // Extraemos la info del mensaje original
+  const mensaje = interaction.message;
+
+  // Buscar el texto de la sugerencia y autor del container actual
+  // Como Components V2 no expone el texto fácilmente, lo leemos del primer TextDisplay
+  const textoOriginal = mensaje.components[0]?.components
+    ?.find(c => c.type === 10)?.content || '';
+
+  // Extraer autor del texto (entre <@ y >)
+  const autorMatch = textoOriginal.match(/<@(\d+)>/);
+  const autorId = autorMatch ? autorMatch[1] : null;
+
+  // Extraer sugerencia del texto (entre "Sugerencia:**\n" y "\n\n**→ |  Estado")
+  const sugerenciaMatch = textoOriginal.match(/\*\*Sugerencia:\*\*\n([\s\S]+?)\n\n\*\*→/);
+  const sugerenciaTexto = sugerenciaMatch ? sugerenciaMatch[1] : 'N/A';
+
+  const usuarioFake = {
+    id: autorId || '0',
+    tag: autorId ? `<@${autorId}>` : 'Desconocido',
+  };
+
+  const nuevoContainer = buildSugerenciaContainer(usuarioFake, sugerenciaTexto, accion);
+
+  await interaction.update({
+    components: [nuevoContainer],
+    flags: MessageFlags.IsComponentsV2,
+  });
+}
 module.exports = { handleInteraction };
