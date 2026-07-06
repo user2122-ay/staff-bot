@@ -190,7 +190,7 @@ async function handleApelacionButton(interaction, customId) {
 
   if (!isInternalAffairs) {
     return interaction.reply({
-      content: '❌ Solo Asuntos Internos puede gestionar esta apelación.',
+      content: '❌ Solo Dirección Administrativa puede gestionar esta apelación.',
       flags: MessageFlags.Ephemeral,
     });
   }
@@ -627,7 +627,7 @@ async function handleReporteModal(interaction) {
 async function handleReporteButton(interaction, customId) {
   if (!interaction.member.roles.cache.has(config.INTERNAL_AFFAIRS_ROLE_ID)) {
     return interaction.reply({
-      content: '❌ Solo Asuntos Internos puede gestionar los reportes.',
+      content: '❌ Solo Dirección Administrativa puede gestionar los reportes.',
       flags: MessageFlags.Ephemeral,
     });
   }
