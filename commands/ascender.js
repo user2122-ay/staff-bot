@@ -46,7 +46,7 @@ module.exports = {
 
     await interaction.reply({ embeds: [embed] });
 
-    const canalLogs = interaction.guild.channels.cache.get("1492368430265794641");
+    const canalLogs = interaction.guild.channels.cache.get("1523139096237834342");
     if (canalLogs) canalLogs.send({ embeds: [embed] });
   }
 };
