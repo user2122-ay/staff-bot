@@ -1,12 +1,12 @@
 module.exports = {
   // Rol que puede usar /advertencia, /sancion y !panel sancion
-  STAFF_MANAGER_ROLE_ID: '1435795663710453860',
+  STAFF_MANAGER_ROLE_ID: '1523777021166223371',
 
   // ID de usuario autorizado para enviar el panel con !panel sancion
-  PANEL_OWNER_ID: '1237774088039170170',
+  PANEL_OWNER_ID: '1523777021166223371',
 
   // Canal donde se abren los tickets de apelación
-  APPEAL_CATEGORY_CHANNEL_ID: '1413747200743313550',
+  APPEAL_CATEGORY_CHANNEL_ID: '1523139100595720284',
 
   // Rol de Asuntos Internos que puede ver y atender los tickets de apelación
   INTERNAL_AFFAIRS_ROLE_ID: '1413737213094658099',
