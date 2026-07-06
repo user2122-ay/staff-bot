@@ -39,7 +39,7 @@ function buildMainPanel() {
   );
 
   container.addTextDisplayComponents(
-    new TextDisplayBuilder().setContent('-# Sistema de Asuntos Internos · Gestión de Staff')
+    new TextDisplayBuilder().setContent('-# Sistema de Dirección Administrativa · Gestión de Staff')
   );
 
   return container;
@@ -396,7 +396,7 @@ function buildReportePanel() {
   );
 
   container.addTextDisplayComponents(
-    new TextDisplayBuilder().setContent('-# Sistema de Asuntos Internos · Reportes')
+    new TextDisplayBuilder().setContent('-# Sistema de Dirección Administrativa · Reportes')
   );
 
   return container;
