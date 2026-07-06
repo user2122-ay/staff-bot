@@ -3,7 +3,7 @@ module.exports = {
   STAFF_MANAGER_ROLE_ID: '1523777021166223371',
 
   // ID de usuario autorizado para enviar el panel con !panel sancion
-  PANEL_OWNER_ID: '1523777021166223371',
+  PANEL_OWNER_ID: '1237774088039170170',
 
   // Canal donde se abren los tickets de apelación
   APPEAL_CATEGORY_CHANNEL_ID: '1523139100595720284',
