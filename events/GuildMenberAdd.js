@@ -16,7 +16,7 @@ const config = require('../config');
 // ⚠️ Este link de Discord CDN expira (parámetro ex=). Cuando deje de
 // funcionar, reemplázalo por uno nuevo aquí.
 const WELCOME_IMAGE_URL =
-  'https://cdn.discordapp.com/attachments/1466970127579877660/1524168128370839742/bienvenido_20260707_105039_0000.png?ex=6a4ec3af&is=6a4d722f&hm=b712dae2fc4b09accfeb94f81eb9f4b5c295169a13846b5ee14d74346a50d610&';
+  'https://cdn.discordapp.com/attachments/1523776057206116412/1524177012418416711/bienvenido_20260707_105039_0000.png?ex=6a4ecbf5&is=6a4d7a75&hm=016fbeec70c455d96527cf641db7bbdc758e3b15472a6408d4bd401c28fc6628&';
 
 module.exports = {
   name: Events.GuildMemberAdd,
