@@ -9,11 +9,14 @@ const {
   ActionRowBuilder,
   ButtonBuilder,
   ButtonStyle,
-  AttachmentBuilder,
   MessageFlags,
 } = require('discord.js');
-const path = require('node:path');
 const config = require('../config');
+
+// ⚠️ Este link de Discord CDN expira (parámetro ex=). Cuando deje de
+// funcionar, reemplázalo por uno nuevo aquí.
+const WELCOME_IMAGE_URL =
+  'https://cdn.discordapp.com/attachments/1466970127579877660/1524168128370839742/bienvenido_20260707_105039_0000.png?ex=6a4ec3af&is=6a4d722f&hm=b712dae2fc4b09accfeb94f81eb9f4b5c295169a13846b5ee14d74346a50d610&';
 
 module.exports = {
   name: Events.GuildMemberAdd,
@@ -38,17 +41,11 @@ module.exports = {
         return;
       }
 
-      // 3. Imagen local del repo (assets/bienvenida.png)
-      const attachment = new AttachmentBuilder(
-        path.join(__dirname, '../assets/bienvenida.png'),
-        { name: 'bienvenida.png' }
-      );
-
-      // 4. Construcción del mensaje en Components V2 (cajón único con todo integrado)
+      // 3. Construcción del mensaje en Components V2 (cajón único con todo integrado)
       const container = new ContainerBuilder()
         .addMediaGalleryComponents(
           new MediaGalleryBuilder().addItems(
-            new MediaGalleryItemBuilder().setURL('attachment://bienvenida.png')
+            new MediaGalleryItemBuilder().setURL(WELCOME_IMAGE_URL)
           )
         )
         .addSeparatorComponents(
@@ -109,7 +106,6 @@ module.exports = {
 
       await welcomeChannel.send({
         components: [container],
-        files: [attachment],
         flags: MessageFlags.IsComponentsV2,
       });
     } catch (error) {
@@ -117,4 +113,3 @@ module.exports = {
     }
   },
 };
-
