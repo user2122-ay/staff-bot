@@ -55,4 +55,11 @@ module.exports = {
   ADVERTENCIAS_POR_SANCION: 3,
 
   EMBED_COLOR: 0xE74C3C,
+  
+  staffWelcomeChannelId: '1523139109743235083',
+staffWelcomeRoles: ['1523139010887946393', '1523139032673161270'],
+normativaStaffChannelId: '1523139116450054184',
+normativaRoleplayChannelId: '1523139119327350825',
+normativaDiscordChannelId: '1523139121680486410',
 };
+
