@@ -7,9 +7,8 @@ const {
   EmbedBuilder,
   MessageFlags,
 } = require('discord.js');
-const Actividad = require('../models/Actividad');
 
-// Canal donde se publica el registro final
+// Canal donde se publica el registro
 const CANAL_REGISTRO_ID = '1523139125765607424';
 
 module.exports = {
@@ -74,13 +73,15 @@ module.exports = {
 
     await modalSubmit.reply({
       content:
-        '✅ Formulario recibido. Ahora **envía en este chat** tus capturas de evidencia (una o varias imágenes en el mismo mensaje o en mensajes seguidos). Tienes 5 minutos.',
+        '✅ Formulario recibido. Ahora **envía en este chat** tus capturas de evidencia (una o varias imágenes). Tienes 5 minutos, o escribe `listo` si no tienes capturas.',
       flags: MessageFlags.Ephemeral,
     });
 
     // 3. Recolectar las capturas que el usuario envíe en el canal
-    const filtro = (m) => m.author.id === interaction.user.id && m.attachments.size > 0;
     const capturas = [];
+    const filtro = (m) =>
+      m.author.id === interaction.user.id &&
+      (m.attachments.size > 0 || m.content.toLowerCase() === 'listo');
 
     const collector = interaction.channel.createMessageCollector({
       filter: filtro,
@@ -88,23 +89,17 @@ module.exports = {
     });
 
     collector.on('collect', (msg) => {
-      msg.attachments.forEach((att) => capturas.push(att.url));
-      msg.react('✅').catch(() => {});
+      if (msg.attachments.size > 0) {
+        msg.attachments.forEach((att) => capturas.push(att.url));
+        msg.react('✅').catch(() => {});
+      }
+      if (msg.content.toLowerCase() === 'listo') {
+        collector.stop();
+      }
     });
 
     collector.on('end', async () => {
-      // 4. Guardar en base de datos
-      const registro = await Actividad.create({
-        usuarioId: interaction.user.id,
-        usuarioTag: interaction.user.tag,
-        fecha,
-        horaEntrada,
-        horaSalida,
-        notas,
-        pruebas: capturas,
-      });
-
-      // 5. Construir y publicar el embed en el canal fijo
+      // 4. Construir y publicar el embed final en el canal fijo
       const canal = await interaction.client.channels.fetch(CANAL_REGISTRO_ID).catch(() => null);
       if (!canal) return;
 
@@ -116,32 +111,29 @@ module.exports = {
         })
         .setTitle('📋 Registro de actividad')
         .addFields(
-          { name: 'Fecha', value: fecha, inline: true },
-          { name: 'Entrada', value: horaEntrada, inline: true },
-          { name: 'Salida', value: horaSalida, inline: true },
-          { name: 'Notas', value: notas },
+          { name: '📅 Fecha', value: fecha, inline: true },
+          { name: '🕒 Entrada', value: horaEntrada, inline: true },
+          { name: '🕕 Salida', value: horaSalida, inline: true },
+          { name: '📝 Notas', value: notas },
           {
-            name: 'Pruebas',
-            value: capturas.length ? `${capturas.length} captura(s) adjunta(s) abajo` : 'Sin capturas enviadas',
+            name: '📎 Pruebas',
+            value: capturas.length ? `${capturas.length} captura(s) adjunta(s)` : 'Sin capturas enviadas',
           }
         )
-        .setFooter({ text: `ID: ${registro._id}` })
+        .setFooter({ text: `Registrado por ${interaction.user.username}` })
         .setTimestamp();
 
       if (capturas[0]) embed.setImage(capturas[0]);
 
       await canal.send({
         embeds: [embed],
-        files: capturas.slice(1), // el resto de imágenes como adjuntos extra
+        files: capturas.slice(1), // resto de imágenes como adjuntos extra
       });
 
       await interaction.followUp({
-        content: capturas.length
-          ? '✅ Tu registro fue publicado correctamente.'
-          : '⚠️ Tu registro fue publicado, pero no se recibieron capturas a tiempo.',
+        content: '✅ Tu registro fue publicado correctamente en el canal.',
         flags: MessageFlags.Ephemeral,
       });
     });
   },
 };
-
