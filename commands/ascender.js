@@ -7,19 +7,19 @@ const {
   MessageFlags,
 } = require("discord.js");
 
-// Canal donde se publican los logs de descensos
+// Canal donde se publican los logs de ascensos
 const CANAL_LOGS_ID = "1523776057206116412";
 
 // Rol permitido para usar este comando
-const DESCENDER_ROLE_ID = "1523777021166223371";
+const ASCENDER_ROLE_ID = "1523777021166223371";
 
 module.exports = {
   data: new SlashCommandBuilder()
-    .setName("descender")
-    .setDescription("Registrar un descenso de staff")
+    .setName("ascender")
+    .setDescription("Registrar un ascenso de staff")
 
     .addUserOption((option) =>
-      option.setName("usuario").setDescription("Miembro del staff").setRequired(true)
+      option.setName("usuario").setDescription("Staff").setRequired(true)
     )
 
     .addRoleOption((option) =>
@@ -27,15 +27,15 @@ module.exports = {
     )
 
     .addRoleOption((option) =>
-      option.setName("rango_nuevo").setDescription("Rango al que desciende").setRequired(true)
+      option.setName("rango_nuevo").setDescription("Nuevo rango").setRequired(true)
     )
 
     .addUserOption((option) =>
-      option.setName("aprobado_por").setDescription("Alto staff que aprueba").setRequired(true)
+      option.setName("aprobado_por").setDescription("Alto staff").setRequired(true)
     ),
 
   async execute(interaction) {
-    if (!interaction.member.roles.cache.has(DESCENDER_ROLE_ID)) {
+    if (!interaction.member.roles.cache.has(ASCENDER_ROLE_ID)) {
       return interaction.reply({
         content: "❌ No tienes permiso para usar este comando.",
         flags: MessageFlags.Ephemeral,
@@ -55,10 +55,10 @@ module.exports = {
     const fecha = `<t:${Math.floor(Date.now() / 1000)}:F>`;
 
     // 1. Container para el canal / respuesta
-    const container = new ContainerBuilder().setAccentColor(0xe74c3c);
+    const container = new ContainerBuilder().setAccentColor(0x2ecc71);
 
     container.addTextDisplayComponents(
-      new TextDisplayBuilder().setContent("## 📉 Descenso de Staff")
+      new TextDisplayBuilder().setContent("## 📈 Ascenso de Staff")
     );
 
     container.addSeparatorComponents(
@@ -95,11 +95,11 @@ module.exports = {
     const canalLogs = interaction.guild.channels.cache.get(CANAL_LOGS_ID);
     if (canalLogs) canalLogs.send(payload).catch(() => {});
 
-    // 2. DM discreto al staff descendido (sin tono de "felicitación", solo aviso claro)
-    const dmContainer = new ContainerBuilder().setAccentColor(0xe74c3c);
+    // 2. DM de felicitación al staff ascendido
+    const dmContainer = new ContainerBuilder().setAccentColor(0x2ecc71);
 
     dmContainer.addTextDisplayComponents(
-      new TextDisplayBuilder().setContent("## 📉 Cambio de rango")
+      new TextDisplayBuilder().setContent("## 🎉 ¡Felicidades por tu ascenso!")
     );
 
     dmContainer.addSeparatorComponents(
@@ -108,8 +108,9 @@ module.exports = {
 
     dmContainer.addTextDisplayComponents(
       new TextDisplayBuilder().setContent(
-        `Has sido descendido de **${anterior.name}** a **${nuevo.name}**.\n\n` +
-        `Gestionado por **${aprobador.username}**. Si tienes dudas sobre el motivo, puedes hablar con el alto staff.`
+        `Has sido ascendido de **${anterior.name}** a **${nuevo.name}**.\n\n` +
+        `Aprobado por **${aprobador.username}**, gracias a tu esfuerzo y dedicación en el staff. ` +
+        `¡Sigue así, te lo has ganado! 🚀`
       )
     );
 
