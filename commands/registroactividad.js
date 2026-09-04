@@ -4,7 +4,12 @@ const {
   TextInputBuilder,
   TextInputStyle,
   ActionRowBuilder,
-  EmbedBuilder,
+  ContainerBuilder,
+  TextDisplayBuilder,
+  SeparatorBuilder,
+  SeparatorSpacingSize,
+  MediaGalleryBuilder,
+  MediaGalleryItemBuilder,
   MessageFlags,
 } = require('discord.js');
 
@@ -99,35 +104,56 @@ module.exports = {
     });
 
     collector.on('end', async () => {
-      // 4. Construir y publicar el embed final en el canal fijo
+      // 4. Construir el container (Components V2) y publicarlo en el canal fijo
       const canal = await interaction.client.channels.fetch(CANAL_REGISTRO_ID).catch(() => null);
       if (!canal) return;
 
-      const embed = new EmbedBuilder()
-        .setColor(0x2b6cb0)
-        .setAuthor({
-          name: interaction.user.tag,
-          iconURL: interaction.user.displayAvatarURL(),
-        })
-        .setTitle('📋 Registro de actividad')
-        .addFields(
-          { name: '📅 Fecha', value: fecha, inline: true },
-          { name: '🕒 Entrada', value: horaEntrada, inline: true },
-          { name: '🕕 Salida', value: horaSalida, inline: true },
-          { name: '📝 Notas', value: notas },
-          {
-            name: '📎 Pruebas',
-            value: capturas.length ? `${capturas.length} captura(s) adjunta(s)` : 'Sin capturas enviadas',
-          }
-        )
-        .setFooter({ text: `Registrado por ${interaction.user.username}` })
-        .setTimestamp();
+      const container = new ContainerBuilder().setAccentColor(0x5865f2);
 
-      if (capturas[0]) embed.setImage(capturas[0]);
+      container.addTextDisplayComponents(
+        new TextDisplayBuilder().setContent('## 📋 Registro de Actividad')
+      );
+
+      container.addSeparatorComponents(
+        new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small)
+      );
+
+      container.addTextDisplayComponents(
+        new TextDisplayBuilder().setContent(
+          `→|  **Moderador:** <@${interaction.user.id}>\n\n` +
+          `→|  **Fecha:** ${fecha}\n` +
+          `→|  **Entrada:** ${horaEntrada}\n` +
+          `→|  **Salida:** ${horaSalida}`
+        )
+      );
+
+      container.addSeparatorComponents(
+        new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small)
+      );
+
+      container.addTextDisplayComponents(
+        new TextDisplayBuilder().setContent(`→|  **Notas:**\n${notas}`)
+      );
+
+      container.addSeparatorComponents(
+        new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small)
+      );
+
+      if (capturas.length) {
+        container.addMediaGalleryComponents(
+          new MediaGalleryBuilder().addItems(
+            capturas.map((url) => new MediaGalleryItemBuilder().setURL(url))
+          )
+        );
+      } else {
+        container.addTextDisplayComponents(
+          new TextDisplayBuilder().setContent('→|  **Pruebas:** Sin capturas enviadas')
+        );
+      }
 
       await canal.send({
-        embeds: [embed],
-        files: capturas.slice(1), // resto de imágenes como adjuntos extra
+        components: [container],
+        flags: MessageFlags.IsComponentsV2,
       });
 
       await interaction.followUp({
