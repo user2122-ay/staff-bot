@@ -94,15 +94,8 @@ module.exports = {
       max: 1, // basta un mensaje (con imagen o "listo") para terminar
     });
 
-    collector.on('collect', (msg) => {
-      if (msg.attachments.size > 0) {
-        msg.attachments.forEach((att) => capturas.push(att.url));
-      }
-      msg.delete().catch(() => {}); // borra el mensaje original (imagen o "listo")
-    });
-
-    collector.on('end', async () => {
-      // 4. Construir el container (Components V2) y publicarlo en el canal fijo
+    // 4. Construye y publica el container; se llama una sola vez, ya con todo listo
+    const publicarRegistro = async () => {
       const canal = await interaction.client.channels.fetch(CANAL_REGISTRO_ID).catch(() => null);
       if (!canal) return;
 
@@ -140,7 +133,7 @@ module.exports = {
       if (capturas.length) {
         container.addMediaGalleryComponents(
           new MediaGalleryBuilder().addItems(
-            capturas.map((url) => new MediaGalleryItemBuilder().setURL(url))
+            capturas.map((c) => new MediaGalleryItemBuilder().setURL(`attachment://${c.name}`))
           )
         );
       } else {
@@ -152,12 +145,43 @@ module.exports = {
       await canal.send({
         components: [container],
         flags: MessageFlags.IsComponentsV2,
+        files: capturas.map((c) => ({ attachment: c.buffer, name: c.name })),
       });
 
       await interaction.followUp({
         content: '✅ Tu registro fue publicado correctamente en el canal.',
         flags: MessageFlags.Ephemeral,
       });
+    };
+
+    collector.on('collect', async (msg) => {
+      if (msg.attachments.size > 0) {
+        let i = 0;
+        for (const att of msg.attachments.values()) {
+          try {
+            const res = await fetch(att.url);
+            const buffer = Buffer.from(await res.arrayBuffer());
+            const nombre = att.name || `captura_${i}.png`;
+            capturas.push({ name: `${i}_${nombre}`, buffer });
+            i++;
+          } catch (err) {
+            console.error('Error descargando captura:', err);
+          }
+        }
+      }
+      msg.delete().catch(() => {}); // borra el mensaje original, ya con el buffer a salvo
+      await publicarRegistro(); // recién ahora que ya tenemos todo, se publica
+    });
+
+    collector.on('end', (collected) => {
+      if (collected.size === 0) {
+        interaction
+          .followUp({
+            content: '⌛ Se acabó el tiempo para enviar la evidencia. Usa el comando de nuevo.',
+            flags: MessageFlags.Ephemeral,
+          })
+          .catch(() => {});
+      }
     });
   },
 };
