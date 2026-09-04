@@ -1,29 +1,36 @@
-const { SlashCommandBuilder, EmbedBuilder, PermissionFlagsBits } = require("discord.js");
+const {
+  SlashCommandBuilder,
+  PermissionFlagsBits,
+  ContainerBuilder,
+  TextDisplayBuilder,
+  SeparatorBuilder,
+  SeparatorSpacingSize,
+  MessageFlags,
+} = require("discord.js");
+
+// Canal donde se publican los logs de descensos
+const CANAL_LOGS_ID = "1523776057206116412";
 
 module.exports = {
   data: new SlashCommandBuilder()
     .setName("descender")
     .setDescription("Registrar un descenso de staff")
 
-    .addUserOption(option =>
-      option.setName("usuario")
-        .setDescription("Miembro del staff")
-        .setRequired(true))
+    .addUserOption((option) =>
+      option.setName("usuario").setDescription("Miembro del staff").setRequired(true)
+    )
 
-    .addRoleOption(option =>
-      option.setName("rango_anterior")
-        .setDescription("Rango anterior")
-        .setRequired(true))
+    .addRoleOption((option) =>
+      option.setName("rango_anterior").setDescription("Rango anterior").setRequired(true)
+    )
 
-    .addRoleOption(option =>
-      option.setName("rango_nuevo")
-        .setDescription("Rango al que desciende")
-        .setRequired(true))
+    .addRoleOption((option) =>
+      option.setName("rango_nuevo").setDescription("Rango al que desciende").setRequired(true)
+    )
 
-    .addUserOption(option =>
-      option.setName("aprobado_por")
-        .setDescription("Alto staff que aprueba")
-        .setRequired(true))
+    .addUserOption((option) =>
+      option.setName("aprobado_por").setDescription("Alto staff que aprueba").setRequired(true)
+    )
 
     .setDefaultMemberPermissions(PermissionFlagsBits.ManageRoles),
 
@@ -35,31 +42,72 @@ module.exports = {
 
     const miembro = await interaction.guild.members.fetch(usuario.id);
 
-    // 🔻 Quitar rol anterior y poner el nuevo
     await miembro.roles.remove(anterior).catch(() => {});
     await miembro.roles.add(nuevo).catch(() => {});
 
-    const fecha = new Date().toLocaleString();
+    const fecha = `<t:${Math.floor(Date.now() / 1000)}:F>`;
 
-    const embed = new EmbedBuilder()
-      .setTitle("📉 Descenso de Staff")
-      .setColor("Red")
-      .addFields(
-        { name: "👤 Nombre del Staff", value: `<@${usuario.id}>` },
-        { name: "📈 Rango Anterior", value: `<@&${anterior.id}>`, inline: true },
-        { name: "📉 Rango Descendido", value: `<@&${nuevo.id}>`, inline: true },
-        { name: "👮 Aprobado por", value: `<@${aprobador.id}>` },
-        { name: "📅 Fecha", value: fecha }
+    // 1. Container para el canal / respuesta
+    const container = new ContainerBuilder().setAccentColor(0xe74c3c);
+
+    container.addTextDisplayComponents(
+      new TextDisplayBuilder().setContent("## 📉 Descenso de Staff")
+    );
+
+    container.addSeparatorComponents(
+      new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small)
+    );
+
+    container.addTextDisplayComponents(
+      new TextDisplayBuilder().setContent(
+        `→|  **Staff:** <@${usuario.id}>\n\n` +
+        `→|  **Antes:** <@&${anterior.id}>\n` +
+        `→|  **Ahora:** <@&${nuevo.id}>`
       )
-      .setTimestamp();
+    );
 
-    await interaction.reply({ embeds: [embed] });
+    container.addSeparatorComponents(
+      new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small)
+    );
 
-    // 📢 LOGS
-    const canalLogs = interaction.guild.channels.cache.get("1523776057206116412");
+    container.addTextDisplayComponents(
+      new TextDisplayBuilder().setContent(
+        `→|  **Aprobado por:** <@${aprobador.id}>\n` +
+        `→|  **Fecha:** ${fecha}`
+      )
+    );
 
-    if (canalLogs) {
-      canalLogs.send({ embeds: [embed] });
-    }
-  }
+    const payload = {
+      components: [container],
+      flags: MessageFlags.IsComponentsV2,
+      allowedMentions: { parse: ["users"] }, // menciona roles sin hacer ping
+    };
+
+    await interaction.reply(payload);
+
+    const canalLogs = interaction.guild.channels.cache.get(CANAL_LOGS_ID);
+    if (canalLogs) canalLogs.send(payload).catch(() => {});
+
+    // 2. DM discreto al staff descendido (sin tono de "felicitación", solo aviso claro)
+    const dmContainer = new ContainerBuilder().setAccentColor(0xe74c3c);
+
+    dmContainer.addTextDisplayComponents(
+      new TextDisplayBuilder().setContent("## 📉 Cambio de rango")
+    );
+
+    dmContainer.addSeparatorComponents(
+      new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small)
+    );
+
+    dmContainer.addTextDisplayComponents(
+      new TextDisplayBuilder().setContent(
+        `Has sido descendido de **${anterior.name}** a **${nuevo.name}**.\n\n` +
+        `Gestionado por **${aprobador.username}**. Si tienes dudas sobre el motivo, puedes hablar con el alto staff.`
+      )
+    );
+
+    await usuario
+      .send({ components: [dmContainer], flags: MessageFlags.IsComponentsV2 })
+      .catch(() => {}); // por si tiene los MD cerrados
+  },
 };
