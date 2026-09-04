@@ -118,4 +118,3 @@ module.exports = {
       .catch(() => {}); // por si tiene los MD cerrados
   },
 };
-};
