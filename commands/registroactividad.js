@@ -1,4 +1,3 @@
-
 const {
   SlashCommandBuilder,
   ModalBuilder,
@@ -79,7 +78,7 @@ module.exports = {
 
     await modalSubmit.reply({
       content:
-        '✅ Formulario recibido. Ahora **envía en este chat** tus capturas de evidencia (una o varias imágenes). Tienes 5 minutos, o escribe `listo` si no tienes capturas.',
+        '✅ Formulario recibido. Ahora **envía en este chat** tus capturas de evidencia (se publicará automáticamente al recibirlas), o escribe `listo` si no tienes capturas.',
       flags: MessageFlags.Ephemeral,
     });
 
@@ -92,16 +91,14 @@ module.exports = {
     const collector = interaction.channel.createMessageCollector({
       filter: filtro,
       time: 5 * 60 * 1000,
+      max: 1, // basta un mensaje (con imagen o "listo") para terminar
     });
 
     collector.on('collect', (msg) => {
       if (msg.attachments.size > 0) {
         msg.attachments.forEach((att) => capturas.push(att.url));
-        msg.react('✅').catch(() => {});
       }
-      if (msg.content.toLowerCase() === 'listo') {
-        collector.stop();
-      }
+      msg.delete().catch(() => {}); // borra el mensaje original (imagen o "listo")
     });
 
     collector.on('end', async () => {
