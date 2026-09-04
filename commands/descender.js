@@ -1,6 +1,5 @@
 const {
   SlashCommandBuilder,
-  PermissionFlagsBits,
   ContainerBuilder,
   TextDisplayBuilder,
   SeparatorBuilder,
@@ -10,6 +9,9 @@ const {
 
 // Canal donde se publican los logs de descensos
 const CANAL_LOGS_ID = "1523776057206116412";
+
+// Rol permitido para usar este comando
+const DESCENDER_ROLE_ID = "1523777021166223371";
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -30,11 +32,16 @@ module.exports = {
 
     .addUserOption((option) =>
       option.setName("aprobado_por").setDescription("Alto staff que aprueba").setRequired(true)
-    )
-
-    .setDefaultMemberPermissions(PermissionFlagsBits.ManageRoles),
+    ),
 
   async execute(interaction) {
+    if (!interaction.member.roles.cache.has(DESCENDER_ROLE_ID)) {
+      return interaction.reply({
+        content: "❌ No tienes permiso para usar este comando.",
+        flags: MessageFlags.Ephemeral,
+      });
+    }
+
     const usuario = interaction.options.getUser("usuario");
     const anterior = interaction.options.getRole("rango_anterior");
     const nuevo = interaction.options.getRole("rango_nuevo");
@@ -110,4 +117,5 @@ module.exports = {
       .send({ components: [dmContainer], flags: MessageFlags.IsComponentsV2 })
       .catch(() => {}); // por si tiene los MD cerrados
   },
+};
 };
